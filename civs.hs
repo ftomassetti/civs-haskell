@@ -43,15 +43,19 @@ worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
 data PickleElement = PickleClass { moduleName :: String, className :: String } 
+                     | PickleSetState PickleElement PickleElement
                      | PickleEmptyTuple
-                     | PickleEmptyDict
+                     | PickleTuple2 PickleElement PickleElement
+                     | PickleDict (Map PickleElement PickleElement)
                      | PickleList [PickleElement]
                      | PickleInstantiation PickleElement PickleElement
                      | PickleMark
+                     | PickleBool Bool
                      | PickleString String
                      | PickleInt Int
-                     | PickleFloat Double
-                     deriving (Show, Eq)
+                     | PickleFloat Double                     
+                     | PickleNone
+                     deriving (Show, Eq, Ord)
 
 type PickleStack = [PickleElement]
 type PickleMemo  = Map Int PickleElement
@@ -126,7 +130,41 @@ readWord64 bs = let val = runGet getWord64be bs
                     bs' = S.tail $ S.tail $ S.tail $ S.tail $ S.tail $ S.tail $ S.tail $ S.tail bs
                 in (val,bs')
 
-process :: PickleStatus -> S.ByteString -> IO PickleStatus
+processSetItemsReading :: PickleStatus -> Map PickleElement PickleElement -> (Map PickleElement PickleElement, PickleStatus)
+processSetItemsReading st entries    = let (head,st') = picklePop st
+                                       in case head of PickleMark -> (entries, st')
+                                                       _          -> let (key,st'') = picklePop st'
+                                                                         entries' = Data.Map.insert key head entries
+                                                                     in processSetItemsReading st'' entries'  
+
+-- Pop pairs of key-values from the stack until a Mark is found
+-- Pop the dict below the mark
+-- Push the modified dict     
+processSetItems :: PickleStatus -> PickleStatus
+processSetItems st  =   let (entries,st') = processSetItemsReading st (Data.Map.empty)
+                            (dict,st'') = picklePop st'
+                            dict' = case dict of PickleDict existingEntries -> PickleDict (Data.Map.union existingEntries entries)
+                                                 _ -> error "Expecting a dict on the stack"
+                            st''' = picklePush st'' dict'
+                        in st'''
+
+readUint16 :: S.ByteString -> (Int, S.ByteString)
+readUint16 bs = let b0 = S.head bs
+                    b1 = S.head $ S.tail bs                    
+                    bs' = S.tail $ S.tail bs
+                    index = (fromIntegral b0) + ((fromIntegral b1)*256)
+                in (index, bs')
+
+readUint64 :: S.ByteString -> (Int, S.ByteString)
+readUint64 bs = let b0 = S.head bs
+                    b1 = S.head $ S.tail bs
+                    b2 = S.head $ S.tail $ S.tail bs
+                    b3 = S.head $ S.tail $ S.tail $ S.tail bs
+                    bs' = S.tail $ S.tail $ S.tail $ S.tail bs
+                    index = (fromIntegral b0) + ((fromIntegral b1)*256) + ((fromIntegral b2)*256*256) + ((fromIntegral b3)*256*256*256)
+                in (index, bs')
+
+process :: PickleStatus -> S.ByteString -> IO PickleElement
 process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes")
                               --putStrLn ("Status: "    ++ (show status))
                               let h = S.head bytestring
@@ -145,7 +183,6 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
                                             process status''' bytestring'
                                   99  -> do (moduleName, bytestring'')  <- readNlString bytestring'                                                                                
                                             (className,  bytestring''') <- readNlString bytestring''
-                                            putStrLn $ "GLOBAL " ++ moduleName ++ "." ++ className
                                             let status' = picklePush status (PickleClass moduleName className)
                                             process status' bytestring'''
                                   -- 'q' BINPUT
@@ -156,12 +193,10 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
                                              let status' = pickleSetMemo status index' e
                                              process status' bytestring''
                                   -- 'r' LONG_BINPUT
-                                  114 -> do let b0 = S.head bytestring
-                                            let b1 = S.head $ S.tail bytestring 
-                                            let b2 = S.head $ S.tail $ S.tail bytestring
-                                            let b3 = S.head $ S.tail $ S.tail $ S.tail bytestring
-                                            let bytestring'' = S.tail $ S.tail $ S.tail $ S.tail bytestring'
-                                            let index = (fromIntegral b0) + ((fromIntegral b1)*256) + ((fromIntegral b2)*256*256) + ((fromIntegral b3)*256*256*256)
+                                  -- Store the stack top into the memo. The stack is not popped.
+                                  -- The index of the memo location to write into is given by the 4-byte
+                                  -- unsigned little-endian integer following
+                                  114 -> do let (index,bytestring'') = readUint64 bytestring'
                                             let e = pickleStackTop status 
                                             let status' = pickleSetMemo status index e
                                             process status' bytestring''
@@ -171,6 +206,14 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
                                              let e = pickleGetMemo status (fromIntegral index)
                                              let status' = picklePush status e
                                              process status' bytestring''
+                                  -- 'j' LONG_BINGET
+                                  -- Read an object from the memo and push it on the stack.
+                                  -- The index of the memo object to push is given by the 4-byte unsigned
+                                  -- little-endian integer following
+                                  106 ->  do let (index,bytestring'') = readUint64 bytestring'
+                                             let el = pickleGetMemo status (fromIntegral index)
+                                             let status' = picklePush status el
+                                             process status' bytestring''                                             
                                   -- 'G' BINFLOAT
                                   71  ->  do let (word64,bytestring'') = readWord64 bytestring'
                                              let val = wordToDouble word64
@@ -181,6 +224,10 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
                                              let bytestring'' = S.tail bytestring'
                                              let status' = picklePush status (PickleInt (fromIntegral val))
                                              process status' bytestring''
+                                  -- 'M' BININT2
+                                  77  ->  do let (val,bytestring'') = readUint16 bytestring'
+                                             let status' = picklePush status (PickleInt (fromIntegral val))
+                                             process status' bytestring''                                             
                                   -- '(' MARK
                                   40 ->   do let status' = picklePush status PickleMark
                                              process status' bytestring'
@@ -205,12 +252,45 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
                                   93 ->  do let status' = picklePush status (PickleList [])
                                             process status' bytestring'                              
                                   -- '}' EMPTY_DICT
-                                  125 ->  do let status' = picklePush status PickleEmptyDict
+                                  125 ->  do let status' = picklePush status (PickleDict Data.Map.empty)
                                              process status' bytestring'             
                                   -- \x86 TUPLE2
-                                  134 ->  do                                                                                                             
+                                  -- Build a two-tuple out of the top two items on the stack
+                                  -- Push the built tuple
+                                  134 ->  do let (el2,status') = picklePop status 
+                                             let (el1,status'') = picklePop status'
+                                             let t = PickleTuple2 el1 el2
+                                             let status''' = picklePush status'' t
+                                             process status''' bytestring' 
+                                  -- \x88 NEWTRUE
+                                  136 ->  do let status' = picklePush status (PickleBool True)
+                                             process status' bytestring' 
+                                  -- \x89 NEWFALSE
+                                  137 ->  do let status' = picklePush status (PickleBool False)
+                                             process status' bytestring'                                              
+                                  -- 'N' NONE
+                                  78 ->   do let status' = picklePush status PickleNone
+                                             process status' bytestring'  
+                                  -- 'u' SETITEMS
+                                  117 ->  do process (processSetItems status) bytestring'
+
+                                  -- 'b' BUILD
+                                  98  ->  do let (arg, status') = picklePop status 
+                                             let (obj, status'') = picklePop status'
+                                             let obj' = PickleSetState obj arg
+                                             let status''' = picklePush status'' obj'
+                                             process status''' bytestring'
+
+                                  -- '.' STOP
+                                  46  ->  do let (head, status') = picklePop status
+                                             putStrLn "Done reading"
+                                             return head
+
                                   otherwise -> do putStrLn $ "unknown " ++ (show h)
-                                                  return status
+                                                  let bytes = S.unpack bytestring :: [Word8]
+                                                  let l = length bytes
+                                                  putStrLn $ "Remaining bytes are " ++ (show l)
+                                                  return PickleNone
                              
 
 main :: IO ()
@@ -218,8 +298,9 @@ main = do putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
           --let res = unpickle byteString
           --let bytes = S.unpack byteString :: [Word8]      
-          process (PickleStatus [] empty) byteString
+          world <- process (PickleStatus [] empty) byteString
           --case res of
           --     Left err -> putStrLn $ "Can't unpickle .\nUnpickling error:\n " ++ err
           --     Right v -> putStrLn "Well done!"
+          putStrLn $ "World = " ++ (show world)
           putStrLn "Done"
