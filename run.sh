@@ -1,2 +1,2 @@
 #!/bin/bash
-dist/build/civs/civs
+./dist/build/civs/civs

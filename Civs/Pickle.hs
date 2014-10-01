@@ -1,46 +1,15 @@
+module Civs.Pickle where
+-- (PickleElement(PickleSetState,PickleDict,PickleStatus),process)
 import Data.List
 import Data.Word
 import Data.Map
 import Data.Char
 import Data.Maybe
 import Data.Binary.Get
+import Data.Typeable
 import qualified Data.ByteString.Lazy as S
 import qualified Data.ByteString.Internal as BS (c2w, w2c)
 import Data.Binary.IEEE754
-
--------------------------------------------------
--- Basic
--------------------------------------------------
-
-hasRepetitions :: (Eq a) => [a] -> Bool
-hasRepetitions xs = nub xs /= xs
-
-assert false msg _ = error ("Assertion failed: " ++ msg)
-assert true  msg x = x
-
--------------------------------------------------
--- Model
--------------------------------------------------
-
-type Id = Integer
-
-class WithId el where
-  getInGame :: Game -> Id -> el
-
-data Name = Name String | Unnamed
-            deriving Show
-
-data Position = Pos { x :: Int, y :: Int } 
-                deriving Show
-
-data Group = Group { id :: Id, name :: Name }
-             deriving Show
-
-data Game = Game { groups :: [Group] }
-            deriving Show
-
-worldFileName = "worlds/seed_77.world"
-worldBytes = S.readFile worldFileName
 
 data PickleElement = PickleClass { moduleName :: String, className :: String } 
                      | PickleSetState PickleElement PickleElement
@@ -55,7 +24,7 @@ data PickleElement = PickleClass { moduleName :: String, className :: String }
                      | PickleInt Int
                      | PickleFloat Double                     
                      | PickleNone
-                     deriving (Show, Eq, Ord)
+                     deriving (Show, Eq, Ord, Typeable)
 
 type PickleStack = [PickleElement]
 type PickleMemo  = Map Int PickleElement
@@ -98,13 +67,12 @@ pickleSetMemo status k v = status'
 --wf :: STMutable a File
 --wf = File.new "worlds/seed_77.world"
 
-readNlString' :: String -> S.ByteString -> IO (String, S.ByteString)
-readNlString' s bytes = do let pn = S.head bytes
-                           let bytes' = S.tail bytes
-                           putStrLn $ "  reading " ++ (show (BS.w2c pn))
-                           if pn == 10 then return (s,bytes') else readNlString' (s ++ [BS.w2c pn]) bytes'
+readNlString' :: String -> S.ByteString -> (String, S.ByteString)
+readNlString' s bytes = let pn = S.head bytes
+                            bytes' = S.tail bytes
+                        in if pn == 10 then (s,bytes') else readNlString' (s ++ [BS.w2c pn]) bytes'
 
-readNlString :: S.ByteString -> IO (String, S.ByteString)
+readNlString :: S.ByteString -> (String, S.ByteString)
 readNlString bytes = readNlString' "" bytes
 
 readShortBinString' :: S.ByteString -> Int -> String -> (String, S.ByteString)
@@ -172,7 +140,6 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
                               case h of
                                   128  -> do let pn = S.head bytestring'
                                              let bytestring'' = S.tail bytestring'
-                                             putStrLn $ "Protocol " ++ (show pn)
                                              process status bytestring''
                                   -- \x81 NEWOBJ
                                   129 -> do let (args,status') = picklePop status 
@@ -181,8 +148,8 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
                                             let status''' = picklePush status'' newobj
                                             --putStrLn $ "NEWOBJ"
                                             process status''' bytestring'
-                                  99  -> do (moduleName, bytestring'')  <- readNlString bytestring'                                                                                
-                                            (className,  bytestring''') <- readNlString bytestring''
+                                  99  -> do let (moduleName, bytestring'')  = readNlString bytestring'                                                                                
+                                            let (className,  bytestring''') = readNlString bytestring''
                                             let status' = picklePush status (PickleClass moduleName className)
                                             process status' bytestring'''
                                   -- 'q' BINPUT
@@ -283,7 +250,6 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
 
                                   -- '.' STOP
                                   46  ->  do let (head, status') = picklePop status
-                                             putStrLn "Done reading"
                                              return head
 
                                   otherwise -> do putStrLn $ "unknown " ++ (show h)
@@ -291,16 +257,17 @@ process status bytestring = do --putStrLn ("Processing " ++ (show l) ++ " bytes"
                                                   let l = length bytes
                                                   putStrLn $ "Remaining bytes are " ++ (show l)
                                                   return PickleNone
-                             
 
-main :: IO ()
-main = do putStrLn "Start"
-          byteString <- S.readFile worldFileName :: IO S.ByteString
-          --let res = unpickle byteString
-          --let bytes = S.unpack byteString :: [Word8]      
-          world <- process (PickleStatus [] empty) byteString
-          --case res of
-          --     Left err -> putStrLn $ "Can't unpickle .\nUnpickling error:\n " ++ err
-          --     Right v -> putStrLn "Well done!"
-          putStrLn $ "World = " ++ (show world)
-          putStrLn "Done"
+printPickle :: PickleElement -> String
+printPickle el = case el of
+                      PickleClass mn cs -> "Class" ++ mn ++ "." ++ cs
+                      PickleInstantiation a b -> "Instantiation of (" ++ (printPickle a) ++ ") args: (" ++ (printPickle b) ++ ")"
+                      PickleNone -> "None"
+                      PickleEmptyTuple -> "'()"
+                      PickleDict d -> "Dict"
+                      PickleSetState obj st -> "SetState (" ++ (printPickle obj) ++ ") state: (" ++ (printPickle st) ++ ")"
+                      _          -> "...incomplete"
+
+toString (PickleString s) = s
+toDict (PickleDict d)   = Data.Map.mapKeys toString d
+toInt (PickleInt i) = i
