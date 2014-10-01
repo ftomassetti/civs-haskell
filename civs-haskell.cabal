@@ -12,7 +12,7 @@ maintainer:          f.tomassetti@gmail.com
 build-type:          Simple
 
 executable civs
-  main-is:           civs.hs
+  main-is:           Civs/civs.hs
   build-depends:     haskell2010 == 1.1.*,
                      data-binary-ieee754 == 0.4.*,
                      bytestring == 0.10.*,
