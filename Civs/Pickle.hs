@@ -267,11 +267,14 @@ printPickle el = case el of
                       PickleList l -> "List"
                       PickleNone -> "None"
                       PickleEmptyTuple -> "'()"
-                      PickleDict d -> "Dict"
+                      PickleDict d -> "Dict "++(show $ keys d)
                       PickleSetState obj st -> "SetState (" ++ (printPickle obj) ++ ") state: (" ++ (printPickle st) ++ ")"
                       _          -> "...incomplete"
 
 toString (PickleString s) = s
+toDict :: PickleElement -> Map String PickleElement
 toDict (PickleDict d)     = Data.Map.mapKeys toString d
 toInt (PickleInt i)       = i
+toDouble (PickleFloat f)     = f
 toList (PickleList l)     = l
+toList e = error $ "I canno convert to list "++(printPickle e)

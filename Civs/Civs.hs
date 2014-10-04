@@ -102,10 +102,52 @@ getBiome w pos = let biomeMatrix = getWorldEntry w "biome"
                      cell'' = toBiome cell'
                  in cell''
 
+getElevation :: PickleElement -> Position -> Double
+getElevation w pos = let matrix = getWorldEntry w "elevation"
+                         x = posx pos
+                         y = posy pos
+                         dat = Civs.Pickle.toDict matrix
+                         dat' = getMaybe $ Data.Map.lookup "data" dat :: PickleElement
+                         dat'' = Civs.Pickle.toList dat'
+                         row  = Civs.Pickle.toList $ dat'' !! y
+                         cell = row !! x
+                         cell' = toDouble cell                          
+                     in cell'
+
 printCell w pos = putStrLn $ " biome " ++ (show (posx pos)) ++ " " ++ (show (posy pos)) ++ " = "++(show $ getBiome w pos)
 printCells w (pos:rest) = do printCell w pos
                              printCells w rest
 printCells w [] = putStrLn "Done"
+
+
+
+printElev world = do let w = getWidth world
+                     let h = getHeight world
+                     let points = [Pos x y | x <- [0..(pred w)], y <- [0..(pred h)]]
+                     let elevs = Data.List.map (getElevation (world)) points
+                     --putStrLn $ "Points " ++ (show points)
+                     --putStrLn $ "Elevs " ++ (show elevs)
+                     putStrLn $ "Min is " ++ (show (minimum elevs))
+                     putStrLn $ "Max is " ++ (show (maximum elevs))
+
+altitudeColor :: Double -> PixelRGB8
+altitudeColor elev = let f = elev / 20.0
+                         comp = round( f*255 )
+                     in PixelRGB8 comp comp comp
+
+mix :: Word8 -> Word8 -> Double -> Double -> Word8
+mix c1 c2 f1 f2 = let comp1 =  (fromIntegral c1) * f1
+                      comp2 =  (fromIntegral c2) * f2
+                  in round( comp1+comp2 )
+
+mixColors :: PixelRGB8 -> PixelRGB8 ->  Double -> PixelRGB8
+mixColors c1 c2 f = let PixelRGB8 r1 g1 b1 = c1
+                        PixelRGB8 r2 g2 b2 = c2
+                        fi = 1.0 - f
+                        r = mix r1 r2 f fi
+                        g = mix g1 g2 f fi                        
+                        b = mix b1 b2 f fi
+                    in PixelRGB8 r g b
 
 biomeToColor :: Biome -> PixelRGB8
 biomeToColor b = case b of
@@ -126,8 +168,10 @@ generateMap :: PickleElement -> Image PixelRGB8
 generateMap world = generateImage f w h
                     where w = getWidth world
                           h = getHeight world
-                          f x y = biomeToColor b
-                                  where b = getBiome world (Pos x y)                          
+                          f x y = mixColors base altColor 0.4
+                                  where b = getBiome world (Pos x y)
+                                        base = biomeToColor b
+                                        altColor = altitudeColor (getElevation world (Pos x y))                          
 
 main :: IO ()
 main = do putStrLn "Start"
@@ -143,6 +187,7 @@ main = do putStrLn "Start"
           putStrLn $ " name = "++(show $ getName world)
           putStrLn $ " width = "++(show $ getWidth world)
           putStrLn $ " height = "++(show $ getHeight world)
+          printElev world          
           let img = generateMap world
           savePngImage "map.png" (ImageRGB8 img)
           putStrLn "Done"
