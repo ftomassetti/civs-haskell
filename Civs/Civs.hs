@@ -8,6 +8,7 @@ import Data.Map
 import Data.Char
 import qualified Data.ByteString.Lazy as S
 import Data.Typeable
+import Codec.Picture
 
 -------------------------------------------------
 -- Basic
@@ -51,7 +52,7 @@ data Biome = Ocean
              | Iceland
              | Jungle
              | Savanna
-             deriving Show
+             deriving (Show, Eq)
 
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
@@ -106,6 +107,28 @@ printCells w (pos:rest) = do printCell w pos
                              printCells w rest
 printCells w [] = putStrLn "Done"
 
+biomeToColor :: Biome -> PixelRGB8
+biomeToColor b = case b of
+                  Ocean        -> PixelRGB8   0   0 255 
+                  Tundra       -> PixelRGB8 142 145 102
+                  Alpine       -> PixelRGB8  94  82  48
+                  Glacier      -> PixelRGB8 186 227 222
+                  Jungle       -> PixelRGB8  98 214  69
+                  Forest       -> PixelRGB8  60  99  51
+                  Iceland      -> PixelRGB8 186 227 222
+                  Grassland    -> PixelRGB8  82 158  63
+                  SandDesert   -> PixelRGB8 232 224 107
+                  RockDesert   -> PixelRGB8 153 149 138
+                  Savanna      -> PixelRGB8 199 152  44
+                  _ -> error $ "Unknown: " ++ (show b)
+
+generateMap :: PickleElement -> Image PixelRGB8
+generateMap world = generateImage f w h
+                    where w = getWidth world
+                          h = getHeight world
+                          f x y = biomeToColor b
+                                  where b = getBiome world (Pos x y)                          
+
 main :: IO ()
 main = do putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
@@ -120,13 +143,6 @@ main = do putStrLn "Start"
           putStrLn $ " name = "++(show $ getName world)
           putStrLn $ " width = "++(show $ getWidth world)
           putStrLn $ " height = "++(show $ getHeight world)
-          putStrLn $ " biome 0 0 = "++(show $ getBiome world (Pos 0 0))
-          putStrLn $ " biome 511 511 = "++(show $ getBiome world (Pos 511 511))
-          putStrLn $ " biome 100 100 = "++(show $ getBiome world (Pos 100 100))
-          putStrLn $ " biome 300 300 = "++(show $ getBiome world (Pos 300 300))
-          let allCells = [Pos x y | x <- [0..511], y <- [0..511]]
-          printCells world allCells
-          let biomes = Data.List.map (getBiome world) allCells
-          let biomes' = Data.List.map show biomes
-          let biomes'' = Data.List.map putStrLn biomes'
+          let img = generateMap world
+          savePngImage "map.png" (ImageRGB8 img)
           putStrLn "Done"

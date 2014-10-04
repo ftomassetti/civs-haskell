@@ -18,5 +18,5 @@ executable civs
                      data-binary-ieee754 == 0.4.*,
                      bytestring == 0.10.*,
                      binary == 0.5.*,
-                     containers == 0.5.*
-  --ghc-options:       -XDeriveDataTypeable
+                     containers == 0.5.*,
+                     JuicyPixels == 3.1.*
