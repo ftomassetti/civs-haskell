@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Civs.Pickle where
 -- (PickleElement(PickleSetState,PickleDict,PickleStatus),process)
 import Data.List
@@ -262,6 +264,7 @@ printPickle :: PickleElement -> String
 printPickle el = case el of
                       PickleClass mn cs -> "Class" ++ mn ++ "." ++ cs
                       PickleInstantiation a b -> "Instantiation of (" ++ (printPickle a) ++ ") args: (" ++ (printPickle b) ++ ")"
+                      PickleList l -> "List"
                       PickleNone -> "None"
                       PickleEmptyTuple -> "'()"
                       PickleDict d -> "Dict"

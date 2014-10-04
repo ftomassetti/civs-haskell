@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 
 import Civs.Pickle
 
@@ -50,10 +51,16 @@ printWorld (PickleSetState _ (PickleDict m)) = do putStrLn $ "Getting " ++ (show
 getWorld :: PickleElement -> Map PickleElement PickleElement
 getWorld (PickleSetState _ (PickleDict m)) = m
 
-getWidth :: PickleElement -> Int
-getWidth w = let d = getWorld w
-             in toInt (getMaybe (Data.Map.lookup (PickleString "width") d))
+getWorldEntry w k = let d = getWorld w
+                    in getMaybe (Data.Map.lookup (PickleString k) d)
 
+getName w = toString $ getWorldEntry w "name"
+
+getWidth :: PickleElement -> Int
+getWidth w = toInt $ getWorldEntry w "width"
+
+getHeight :: PickleElement -> Int
+getHeight w = toInt $ getWorldEntry w "height"
 
 main :: IO ()
 main = do putStrLn "Start"
@@ -65,5 +72,8 @@ main = do putStrLn "Start"
           --     Left err -> putStrLn $ "Can't unpickle .\nUnpickling error:\n " ++ err
           --     Right v -> putStrLn "Well done!"
           printWorld world
-          putStrLn $ "width="++(show $ getWidth world)
+          putStrLn $ "Biome " ++ (show $ printPickle $ getWorldEntry world "biome")
+          putStrLn $ " name = "++(show $ getName world)
+          putStrLn $ " width = "++(show $ getWidth world)
+          putStrLn $ " height = "++(show $ getHeight world)
           putStrLn "Done"

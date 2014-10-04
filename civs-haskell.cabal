@@ -19,4 +19,4 @@ executable civs
                      bytestring == 0.10.*,
                      binary == 0.5.*,
                      containers == 0.5.*
-  ghc-options:       -XDeriveDataTypeable
+  --ghc-options:       -XDeriveDataTypeable
