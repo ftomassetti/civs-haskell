@@ -272,5 +272,6 @@ printPickle el = case el of
                       _          -> "...incomplete"
 
 toString (PickleString s) = s
-toDict (PickleDict d)   = Data.Map.mapKeys toString d
-toInt (PickleInt i) = i
+toDict (PickleDict d)     = Data.Map.mapKeys toString d
+toInt (PickleInt i)       = i
+toList (PickleList l)     = l

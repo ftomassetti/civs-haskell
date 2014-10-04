@@ -31,7 +31,7 @@ class WithId el where
 data Name = Name String | Unnamed
             deriving Show
 
-data Position = Pos { x :: Int, y :: Int } 
+data Position = Pos { posx :: Int, posy :: Int } 
                 deriving Show
 
 data Group = Group { id :: Id, name :: Name }
@@ -39,6 +39,19 @@ data Group = Group { id :: Id, name :: Name }
 
 data Game = Game { groups :: [Group] }
             deriving Show
+
+data Biome = Ocean
+             | RockDesert
+             | SandDesert
+             | Forest
+             | Grassland
+             | Tundra
+             | Alpine
+             | Glacier
+             | Iceland
+             | Jungle
+             | Savanna
+             deriving Show
 
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
@@ -62,6 +75,37 @@ getWidth w = toInt $ getWorldEntry w "width"
 getHeight :: PickleElement -> Int
 getHeight w = toInt $ getWorldEntry w "height"
 
+toBiome :: String -> Biome
+toBiome s = case s of
+            "ocean" -> Ocean
+            "tundra" -> Tundra
+            "alpine" -> Alpine
+            "glacier" -> Glacier
+            "jungle" -> Jungle
+            "forest" -> Forest
+            "iceland" -> Iceland
+            "grassland" -> Grassland
+            "sand desert" -> SandDesert
+            "rock desert" -> RockDesert
+            "savanna" -> Savanna
+            _ -> error $ "Unknown: " ++ s
+
+getBiome :: PickleElement -> Position -> Biome
+getBiome w pos = let biomeMatrix = getWorldEntry w "biome"
+                     biomeMatrix' = Civs.Pickle.toList biomeMatrix
+                     x = posx pos
+                     y = posy pos
+                     row  = Civs.Pickle.toList $ biomeMatrix' !! y
+                     cell = row !! x
+                     cell' = toString cell
+                     cell'' = toBiome cell'
+                 in cell''
+
+printCell w pos = putStrLn $ " biome " ++ (show (posx pos)) ++ " " ++ (show (posy pos)) ++ " = "++(show $ getBiome w pos)
+printCells w (pos:rest) = do printCell w pos
+                             printCells w rest
+printCells w [] = putStrLn "Done"
+
 main :: IO ()
 main = do putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
@@ -76,4 +120,13 @@ main = do putStrLn "Start"
           putStrLn $ " name = "++(show $ getName world)
           putStrLn $ " width = "++(show $ getWidth world)
           putStrLn $ " height = "++(show $ getHeight world)
+          putStrLn $ " biome 0 0 = "++(show $ getBiome world (Pos 0 0))
+          putStrLn $ " biome 511 511 = "++(show $ getBiome world (Pos 511 511))
+          putStrLn $ " biome 100 100 = "++(show $ getBiome world (Pos 100 100))
+          putStrLn $ " biome 300 300 = "++(show $ getBiome world (Pos 300 300))
+          let allCells = [Pos x y | x <- [0..511], y <- [0..511]]
+          printCells world allCells
+          let biomes = Data.List.map (getBiome world) allCells
+          let biomes' = Data.List.map show biomes
+          let biomes'' = Data.List.map putStrLn biomes'
           putStrLn "Done"
