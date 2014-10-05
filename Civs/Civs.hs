@@ -130,6 +130,34 @@ printElev world = do let w = getWidth world
                      putStrLn $ "Min is " ++ (show (minimum elevs))
                      putStrLn $ "Max is " ++ (show (maximum elevs))
 
+move :: PickleElement -> Position -> Int -> Int -> Maybe Position
+move world pos dx dy = let Pos x y = pos                           
+                           w = getWidth world
+                           h = getHeight world
+                           nx = x+dx
+                           ny = y+dy
+                       in if (nx>0) && (ny>0) && (nx<w) && (ny<h) then Just (Pos nx ny) else Nothing
+
+shadowFrom world e pos dx dy = let shadowOrigin = move world pos dx dy                                   
+                               in case (shadowOrigin) of
+                                  Just pos' -> let e' = getElevation world pos'
+                                               in if (e' > e) then 0.5 else 0.0
+                                  Nothing -> 0.0
+
+shadow :: PickleElement -> Position -> Double
+shadow world pos = let e = getElevation world pos                       
+                   in let shadowTl   = shadowFrom world e pos  (-1) (-1)
+                          shadowTl'  = shadowFrom world e pos  (-2) (-2)
+                          shadowTl'' = shadowFrom world e pos  (-3) (-3)
+                          shadowL    = shadowFrom world e pos  (-1)   0
+                          shadowL'   = shadowFrom world e pos  (-2) (-1)
+                          shadowL''  = shadowFrom world e pos  (-3) (-2)
+                          shadowT    = shadowFrom world e pos    0  (-1)
+                          shadowT'   = shadowFrom world e pos  (-1) (-2)
+                          shadowT''  = shadowFrom world e pos  (-2) (-3)
+                      in shadowTl + shadowTl' + shadowTl'' + (shadowL/2.0) + (shadowL'/3.0) + (shadowL''/4.0) + (shadowT/2.0) + (shadowT'/3.0) + (shadowT''/4.0)
+
+
 altitudeColor :: Double -> PixelRGB8
 altitudeColor elev = let f = elev / 20.0
                          comp = round( f*255 )
@@ -168,10 +196,11 @@ generateMap :: PickleElement -> Image PixelRGB8
 generateMap world = generateImage f w h
                     where w = getWidth world
                           h = getHeight world
-                          f x y = mixColors base altColor 0.4
+                          f x y = mixColors (PixelRGB8 30 30 30) (mixColors base altColor 0.4) sh
                                   where b = getBiome world (Pos x y)
                                         base = biomeToColor b
-                                        altColor = altitudeColor (getElevation world (Pos x y))                          
+                                        altColor = altitudeColor (getElevation world (Pos x y))
+                                        sh = (shadow world (Pos x y)) / 30.0
 
 main :: IO ()
 main = do putStrLn "Start"
