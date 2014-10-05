@@ -206,18 +206,12 @@ generateMap world = generateImage f w h
 main :: IO ()
 main = do putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
-          --let res = unpickle byteString
-          --let bytes = S.unpack byteString :: [Word8]      
           world <- process (PickleStatus [] empty) byteString
-          --case res of
-          --     Left err -> putStrLn $ "Can't unpickle .\nUnpickling error:\n " ++ err
-          --     Right v -> putStrLn "Well done!"
           printWorld world
           putStrLn $ "Biome " ++ (show $ printPickle $ getWorldEntry world "biome")
           putStrLn $ " name = "++(show $ getName world)
           putStrLn $ " width = "++(show $ getWidth world)
           putStrLn $ " height = "++(show $ getHeight world)
-          printElev world          
           let img = generateMap world
           savePngImage "map.png" (ImageRGB8 img)
           putStrLn "Done"
