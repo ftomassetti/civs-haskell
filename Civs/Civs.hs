@@ -20,7 +20,6 @@ main :: IO ()
 main = do putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
           world <- process (PickleStatus [] empty) byteString
-          putStrLn $ "Biome " ++ (show $ printPickle $ getWorldEntry world "biome")
           putStrLn $ " name = "++(show $ getName world)
           putStrLn $ " width = "++(show $ getWidth world)
           putStrLn $ " height = "++(show $ getHeight world)
