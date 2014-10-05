@@ -25,6 +25,7 @@ assert true  msg x = x
 -------------------------------------------------
 
 type Id = Integer
+type World = PickleElement
 
 class WithId el where
   getInGame :: Game -> Id -> el
@@ -70,10 +71,10 @@ getWorldEntry w k = let d = getWorld w
 
 getName w = toString $ getWorldEntry w "name"
 
-getWidth :: PickleElement -> Int
+getWidth :: World -> Int
 getWidth w = toInt $ getWorldEntry w "width"
 
-getHeight :: PickleElement -> Int
+getHeight :: World -> Int
 getHeight w = toInt $ getWorldEntry w "height"
 
 toBiome :: String -> Biome
@@ -91,7 +92,7 @@ toBiome s = case s of
             "savanna" -> Savanna
             _ -> error $ "Unknown: " ++ s
 
-getBiome :: PickleElement -> Position -> Biome
+getBiome :: World -> Position -> Biome
 getBiome w pos = let biomeMatrix = getWorldEntry w "biome"
                      biomeMatrix' = Civs.Pickle.toList biomeMatrix
                      x = posx pos
@@ -102,7 +103,7 @@ getBiome w pos = let biomeMatrix = getWorldEntry w "biome"
                      cell'' = toBiome cell'
                  in cell''
 
-getElevation :: PickleElement -> Position -> Double
+getElevation :: World -> Position -> Double
 getElevation w pos = let matrix = getWorldEntry w "elevation"
                          x = posx pos
                          y = posy pos
@@ -130,7 +131,7 @@ printElev world = do let w = getWidth world
                      putStrLn $ "Min is " ++ (show (minimum elevs))
                      putStrLn $ "Max is " ++ (show (maximum elevs))
 
-move :: PickleElement -> Position -> Int -> Int -> Maybe Position
+move :: World -> Position -> Int -> Int -> Maybe Position
 move world pos dx dy = let Pos x y = pos                           
                            w = getWidth world
                            h = getHeight world
@@ -144,7 +145,7 @@ shadowFrom world e pos dx dy = let shadowOrigin = move world pos dx dy
                                                in if (e' > e) then 0.5 else 0.0
                                   Nothing -> 0.0
 
-shadow :: PickleElement -> Position -> Double
+shadow :: World -> Position -> Double
 shadow world pos = let e = getElevation world pos                       
                    in let shadowTl   = shadowFrom world e pos  (-1) (-1)
                           shadowTl'  = shadowFrom world e pos  (-2) (-2)
@@ -192,7 +193,7 @@ biomeToColor b = case b of
                   Savanna      -> PixelRGB8 199 152  44
                   _ -> error $ "Unknown: " ++ (show b)
 
-generateMap :: PickleElement -> Image PixelRGB8
+generateMap :: World -> Image PixelRGB8
 generateMap world = generateImage f w h
                     where w = getWidth world
                           h = getHeight world
