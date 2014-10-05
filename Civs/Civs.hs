@@ -11,90 +11,9 @@ import qualified Data.ByteString.Lazy as S
 import Data.Typeable
 import Codec.Picture
 
-
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
-
-printWorld :: PickleElement -> IO ()
-printWorld (PickleSetState _ (PickleDict m)) = do putStrLn $ "Getting " ++ (show $ keys m)
-                                                      
-
-getWorld :: PickleElement -> Map PickleElement PickleElement
-getWorld (PickleSetState _ (PickleDict m)) = m
-
-getWorldEntry w k = let d = getWorld w
-                    in getMaybe (Data.Map.lookup (PickleString k) d)
-
-getName w = toString $ getWorldEntry w "name"
-
-getWidth :: World -> Int
-getWidth w = toInt $ getWorldEntry w "width"
-
-getHeight :: World -> Int
-getHeight w = toInt $ getWorldEntry w "height"
-
-toBiome :: String -> Biome
-toBiome s = case s of
-            "ocean" -> Ocean
-            "tundra" -> Tundra
-            "alpine" -> Alpine
-            "glacier" -> Glacier
-            "jungle" -> Jungle
-            "forest" -> Forest
-            "iceland" -> Iceland
-            "grassland" -> Grassland
-            "sand desert" -> SandDesert
-            "rock desert" -> RockDesert
-            "savanna" -> Savanna
-            _ -> error $ "Unknown: " ++ s
-
-getBiome :: World -> Position -> Biome
-getBiome w pos = let biomeMatrix = getWorldEntry w "biome"
-                     biomeMatrix' = Civs.Pickle.toList biomeMatrix
-                     x = posx pos
-                     y = posy pos
-                     row  = Civs.Pickle.toList $ biomeMatrix' !! y
-                     cell = row !! x
-                     cell' = toString cell
-                     cell'' = toBiome cell'
-                 in cell''
-
-getElevation :: World -> Position -> Double
-getElevation w pos = let matrix = getWorldEntry w "elevation"
-                         x = posx pos
-                         y = posy pos
-                         dat = Civs.Pickle.toDict matrix
-                         dat' = getMaybe $ Data.Map.lookup "data" dat :: PickleElement
-                         dat'' = Civs.Pickle.toList dat'
-                         row  = Civs.Pickle.toList $ dat'' !! y
-                         cell = row !! x
-                         cell' = toDouble cell                          
-                     in cell'
-
-printCell w pos = putStrLn $ " biome " ++ (show (posx pos)) ++ " " ++ (show (posy pos)) ++ " = "++(show $ getBiome w pos)
-printCells w (pos:rest) = do printCell w pos
-                             printCells w rest
-printCells w [] = putStrLn "Done"
-
-
-
-printElev world = do let w = getWidth world
-                     let h = getHeight world
-                     let points = [Pos x y | x <- [0..(pred w)], y <- [0..(pred h)]]
-                     let elevs = Data.List.map (getElevation (world)) points
-                     --putStrLn $ "Points " ++ (show points)
-                     --putStrLn $ "Elevs " ++ (show elevs)
-                     putStrLn $ "Min is " ++ (show (minimum elevs))
-                     putStrLn $ "Max is " ++ (show (maximum elevs))
-
-move :: World -> Position -> Int -> Int -> Maybe Position
-move world pos dx dy = let Pos x y = pos                           
-                           w = getWidth world
-                           h = getHeight world
-                           nx = x+dx
-                           ny = y+dy
-                       in if (nx>0) && (ny>0) && (nx<w) && (ny<h) then Just (Pos nx ny) else Nothing
 
 shadowFrom world e pos dx dy = let shadowOrigin = move world pos dx dy                                   
                                in case (shadowOrigin) of
@@ -164,7 +83,6 @@ main :: IO ()
 main = do putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
           world <- process (PickleStatus [] empty) byteString
-          printWorld world
           putStrLn $ "Biome " ++ (show $ printPickle $ getWorldEntry world "biome")
           putStrLn $ " name = "++(show $ getName world)
           putStrLn $ " width = "++(show $ getWidth world)

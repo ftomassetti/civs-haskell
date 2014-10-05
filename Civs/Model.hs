@@ -52,3 +52,63 @@ data Biome = Ocean
              | Jungle
              | Savanna
              deriving (Show, Eq)
+
+getWorld :: PickleElement -> Map PickleElement PickleElement
+getWorld (PickleSetState _ (PickleDict m)) = m
+
+getWorldEntry w k = let d = getWorld w
+                    in getMaybe (Data.Map.lookup (PickleString k) d)
+
+getName w = toString $ getWorldEntry w "name"
+
+getWidth :: World -> Int
+getWidth w = toInt $ getWorldEntry w "width"
+
+getHeight :: World -> Int
+getHeight w = toInt $ getWorldEntry w "height"
+
+toBiome :: String -> Biome
+toBiome s = case s of
+            "ocean" -> Ocean
+            "tundra" -> Tundra
+            "alpine" -> Alpine
+            "glacier" -> Glacier
+            "jungle" -> Jungle
+            "forest" -> Forest
+            "iceland" -> Iceland
+            "grassland" -> Grassland
+            "sand desert" -> SandDesert
+            "rock desert" -> RockDesert
+            "savanna" -> Savanna
+            _ -> error $ "Unknown: " ++ s
+
+getBiome :: World -> Position -> Biome
+getBiome w pos = let biomeMatrix = getWorldEntry w "biome"
+                     biomeMatrix' = Civs.Pickle.toList biomeMatrix
+                     x = posx pos
+                     y = posy pos
+                     row  = Civs.Pickle.toList $ biomeMatrix' !! y
+                     cell = row !! x
+                     cell' = toString cell
+                     cell'' = toBiome cell'
+                 in cell''
+
+getElevation :: World -> Position -> Double
+getElevation w pos = let matrix = getWorldEntry w "elevation"
+                         x = posx pos
+                         y = posy pos
+                         dat = Civs.Pickle.toDict matrix
+                         dat' = getMaybe $ Data.Map.lookup "data" dat :: PickleElement
+                         dat'' = Civs.Pickle.toList dat'
+                         row  = Civs.Pickle.toList $ dat'' !! y
+                         cell = row !! x
+                         cell' = toDouble cell                          
+                     in cell'
+
+move :: World -> Position -> Int -> Int -> Maybe Position
+move world pos dx dy = let Pos x y = pos                           
+                           w = getWidth world
+                           h = getHeight world
+                           nx = x+dx
+                           ny = y+dy
+                       in if (nx>0) && (ny>0) && (nx<w) && (ny<h) then Just (Pos nx ny) else Nothing
