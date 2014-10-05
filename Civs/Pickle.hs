@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Civs.Pickle where
--- (PickleElement(PickleSetState,PickleDict,PickleStatus),process)
 import Data.List
 import Data.Word
 import Data.Map
