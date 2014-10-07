@@ -23,7 +23,10 @@ assert true  msg x = x
 -------------------------------------------------
 
 type Id = Integer
-type World = PickleElement
+data World = World PickleElement
+
+instance Show World where
+  show w = "World " ++ getName w
 
 class WithId el where
   getInGame :: Game -> Id -> el
@@ -37,7 +40,7 @@ data Position = Pos { posx :: Int, posy :: Int }
 data Group = Group { id :: Id, name :: Name }
              deriving Show
 
-data Game = Game { groups :: [Group] }
+data Game = Game { gameWorld :: World, gameGroups :: [Group] }
             deriving Show
 
 data Biome = Ocean
@@ -53,8 +56,8 @@ data Biome = Ocean
              | Savanna
              deriving (Show, Eq)
 
-getWorld :: PickleElement -> Map PickleElement PickleElement
-getWorld (PickleSetState _ (PickleDict m)) = m
+getWorld :: World -> Map PickleElement PickleElement
+getWorld (World (PickleSetState _ (PickleDict m))) = m
 
 getWorldEntry w k = let d = getWorld w
                     in getMaybe (Data.Map.lookup (PickleString k) d)

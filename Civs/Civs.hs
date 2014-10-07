@@ -15,14 +15,15 @@ import Codec.Picture
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
+generateGame :: World -> Int -> Game
+generateGame world seed = g0
+                          where g0 = Game world []
 
 main :: IO ()
 main = do putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
-          world <- process (PickleStatus [] empty) byteString
-          putStrLn $ " name = "++(show $ getName world)
-          putStrLn $ " width = "++(show $ getWidth world)
-          putStrLn $ " height = "++(show $ getHeight world)
-          let img = generateMap world
-          savePngImage "map.png" (ImageRGB8 img)
+          world' <- process (PickleStatus [] empty) byteString
+          let world = World world'
+          let g = generateGame world 1
+          putStrLn $ "Game: " ++ (show g)
           putStrLn "Done"
