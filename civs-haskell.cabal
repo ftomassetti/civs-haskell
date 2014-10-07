@@ -20,4 +20,5 @@ executable civs
                      binary == 0.5.*,
                      containers == 0.5.*,
                      JuicyPixels == 3.1.*,
-                     namegen-haskell >= 0.1
+                     namegen-haskell >= 0.1,
+                     random >= 1.0

@@ -22,7 +22,7 @@ assert true  msg x = x
 -- Model
 -------------------------------------------------
 
-type Id = Integer
+type Id = Int
 data World = World PickleElement
 
 instance Show World where
@@ -40,7 +40,7 @@ data Position = Pos { posx :: Int, posy :: Int }
 data Group = Group { id :: Id, name :: Name }
              deriving Show
 
-data Game = Game { gameWorld :: World, gameGroups :: [Group] }
+data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group] }
             deriving Show
 
 data Biome = Ocean
