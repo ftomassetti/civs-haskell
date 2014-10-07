@@ -37,7 +37,7 @@ data Name = Name String | Unnamed
 data Position = Pos { posx :: Int, posy :: Int } 
                 deriving Show
 
-data Group = Group { id :: Id, name :: Name }
+data Group = Group { id :: Id, name :: Name, groupPos :: Position }
              deriving Show
 
 data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group] }
@@ -95,6 +95,8 @@ getBiome w pos = let biomeMatrix = getWorldEntry w "biome"
                      cell' = toString cell
                      cell'' = toBiome cell'
                  in cell''
+
+isLand w pos = getBiome w pos /= Ocean
 
 getElevation :: World -> Position -> Double
 getElevation w pos = let matrix = getWorldEntry w "elevation"

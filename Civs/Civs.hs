@@ -16,12 +16,24 @@ import System.Random
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
-applyNTimes :: Int -> (a -> a) -> a -> a
-applyNTimes n f val = L.foldl (\s e -> e s) val [f | x <- [1..n]]
+nextSeed :: Int -> Int
+nextSeed seed = head ss
+                where rg = mkStdGen seed
+                      ss = randoms rg :: [Int]
+
+randomPos world seed = Pos x y
+                       where rg = mkStdGen seed
+                             ss0 = randoms rg :: [Int]
+                             x = (ss0 !! 0) `mod` (getWidth world)
+                             y = (ss0 !! 1) `mod` (getHeight world)
+
+randomLandPos world seed = if isLand world pos then pos else randomPos world (nextSeed seed)
+                           where pos = randomPos world seed
 
 generateGroup :: Game -> Int -> Game
 generateGroup g seed = g' { gameGroups = ng : (gameGroups g)}
-                       where ng = Group (gameNextId g) (Name "Lupozzi")
+                       where pos = randomLandPos (gameWorld g) seed
+                             ng = Group (gameNextId g) (Name "Lupozzi") pos
                              g' = g { gameNextId = 1 + gameNextId g}
 
 generateGame :: World -> Int -> Int -> Game
