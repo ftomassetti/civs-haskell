@@ -12,6 +12,9 @@ import qualified Data.ByteString.Lazy as S
 import Data.Typeable
 import Codec.Picture
 import System.Random
+import System.Console.ANSI
+import System.IO
+import Civs.ConsoleExplorer
 
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
@@ -44,7 +47,6 @@ generateGame world seed ngroups = helper g0 ss0 ngroups
                                         helper g ss 0 = g
                                         helper g (s:ss) n = helper (generateGroup g s) ss (n-1)
 
-
 main :: IO ()
 main = do putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
@@ -53,3 +55,12 @@ main = do putStrLn "Start"
           let g = generateGame world 1 3
           putStrLn $ "Game: " ++ (show g)
           putStrLn "Done"
+          --setSGR [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Blue ]
+          --putStrLn "@"
+          hSetEcho stdin False
+          hSetBuffering stdin  NoBuffering
+          hSetBuffering stdout NoBuffering
+          hideCursor
+          setTitle "Civs"
+          let e = Explorer (Pos 0 0)
+          gameLoop g e
