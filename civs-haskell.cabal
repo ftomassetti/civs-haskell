@@ -22,3 +22,4 @@ executable civs
                      JuicyPixels == 3.1.*,
                      namegen-haskell >= 0.1,
                      random >= 1.0
+  hs-source-dirs:  src
