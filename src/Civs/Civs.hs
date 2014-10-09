@@ -61,4 +61,5 @@ main = do putStrLn "Start"
           hideCursor
           setTitle "Civs"
           let e = initialExplorer
+          clearScreen
           gameLoop g e

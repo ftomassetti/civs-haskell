@@ -3,7 +3,7 @@ module Civs.ConsoleExplorer where
 import System.Console.ANSI
 import System.IO
 import Civs.Model
-import Data.Matrix
+import qualified Data.Sequence as S
 
 data Input = Up
            | Down
@@ -18,14 +18,13 @@ data Cell = CellBiome Biome
             deriving (Eq)
 
 -- All the info represented on the screen
-type Screen = Matrix Cell
+type Screen = S.Seq (S.Seq Cell)
 
 data Explorer = Explorer { explorerPos :: Position, explorerScreen :: Screen }
 
 gameLoop :: Game -> Explorer -> IO()
 gameLoop game explorer = do
   let hero = explorerPos explorer
-  clearScreen
   explorer'  <- drawWorld game explorer
   explorer'' <- drawHero  hero explorer
   input <- getInput
@@ -35,11 +34,14 @@ gameLoop game explorer = do
 
 data ScreenPos = ScreenPos { spRow :: Int, spCol :: Int}
 
-setScreenCell screen screenPos cell = setElem cell (r,c) screen
+setScreenCell screen screenPos cell = S.update r row' screen
                                       where ScreenPos r c = screenPos
+                                            row = S.index screen r
+                                            row' = S.update c cell row
 
-getScreenCell screen screenPos = getElem r c initialScreen
+getScreenCell screen screenPos = S.index row c
                                  where ScreenPos r c = screenPos
+                                       row = S.index screen r
 
 drawBiome :: Biome -> IO ()
 drawBiome Ocean =       do  setSGR [ SetConsoleIntensity BoldIntensity
@@ -59,15 +61,36 @@ drawBiome Tundra = do  setSGR [ SetConsoleIntensity BoldIntensity
                        putStr "T"
 
 drawBiome Forest = do  setSGR [ SetConsoleIntensity BoldIntensity
-                           , SetColor Foreground Vivid Green ]
+                           , SetColor Foreground Dull Green ]
                        putStr "F"
 
 drawBiome Jungle = do  setSGR [ SetConsoleIntensity BoldIntensity
                            , SetColor Foreground Vivid Green ]
                        putStr "J"
 
+drawBiome Alpine = do  setSGR [ SetConsoleIntensity BoldIntensity
+                           , SetColor Foreground Dull Magenta ]
+                       putStr "A"
 
-drawBiome _ = return ()
+drawBiome Grassland = do  setSGR [ SetConsoleIntensity BoldIntensity
+                           , SetColor Foreground Dull Green ]
+                          putStr "_"
+
+drawBiome SandDesert = do  setSGR [ SetConsoleIntensity BoldIntensity
+                            , SetColor Foreground Dull Yellow ]
+                           putStr "_"
+
+drawBiome Savanna = do     setSGR [ SetConsoleIntensity BoldIntensity
+                            , SetColor Foreground Dull Yellow ]
+                           putStr "T"
+
+drawBiome RockDesert = do  setSGR [ SetConsoleIntensity BoldIntensity
+                            , SetColor Foreground Dull Cyan ]
+                           putStr "_"
+
+drawBiome _ = do  setSGR [ SetConsoleIntensity BoldIntensity
+                          , SetColor Foreground Dull Red ]
+                  putStr "?"
 
 drawCells :: Game -> Explorer -> [(Int,Int)] -> IO Explorer
 drawCells game explorer [] = return explorer
@@ -86,7 +109,7 @@ drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
 
 drawWorld :: Game -> Explorer -> IO Explorer
 drawWorld game explorer = do
-  let cells = [(x,y) | x <- [1..80], y <- [1..40]]
+  let cells = [(x,y) | x <- [0..(screenWidth-1)], y <- [0..(screenHeight-1)]]
   drawCells game explorer cells
 
 drawHero (Pos heroX heroY) explorer = do
@@ -131,7 +154,8 @@ screenWidth  = 80
 screenHeight = 40
 
 initialScreen :: Screen
-initialScreen = matrix screenHeight screenWidth (\_ -> EmptyCell)
+initialScreen = S.replicate screenHeight row
+                where row = S.replicate screenWidth EmptyCell
 
 initialExplorer :: Explorer
 initialExplorer      = Explorer pos initialScreen
