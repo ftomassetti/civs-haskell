@@ -3,6 +3,7 @@ module Civs.ConsoleExplorer where
 import System.Console.ANSI
 import System.IO
 import Civs.Model
+import Data.Char
 import qualified Data.Sequence as S
 
 data Input = Up
@@ -26,7 +27,7 @@ drawStatus (Pos heroX heroY) explorer = do
   setCursorPosition screenHeight 0
   setSGR [ SetConsoleIntensity BoldIntensity
        , SetColor Foreground Vivid Blue ]
-  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "]     "
+  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "]" ++ [chr 9650]++ [chr 328]++ [chr 329]++ [chr 330]++ [chr 331]++ [chr 332]++ [chr 333]++ [chr 334]++ [chr 335]++ [chr 336]
 
 gameLoop :: Game -> Explorer -> IO()
 gameLoop game explorer = do
@@ -57,43 +58,43 @@ drawBiome Ocean =       do  setSGR [ SetConsoleIntensity BoldIntensity
 
 drawBiome Glacier = do setSGR [ SetConsoleIntensity BoldIntensity
                            , SetColor Foreground Vivid White ]
-                       putStr "*"
+                       putStr [chr 9651]
 
 drawBiome Iceland = do setSGR [ SetConsoleIntensity BoldIntensity
                            , SetColor Foreground Vivid White ]
-                       putStr "*"
+                       putStr "*" -- [chr 9728]
 
 drawBiome Tundra = do  setSGR [ SetConsoleIntensity BoldIntensity
                            , SetColor Foreground Vivid Black ]
-                       putStr "T"
+                       putStr [chr 937]
 
 drawBiome Forest = do  setSGR [ SetConsoleIntensity BoldIntensity
                            , SetColor Foreground Dull Green ]
-                       putStr "F"
+                       putStr [chr 937] -- 	003A9
 
 drawBiome Jungle = do  setSGR [ SetConsoleIntensity BoldIntensity
                            , SetColor Foreground Vivid Green ]
-                       putStr "J"
+                       putStr [chr 9641]
 
 drawBiome Alpine = do  setSGR [ SetConsoleIntensity BoldIntensity
-                           , SetColor Foreground Dull Magenta ]
-                       putStr "A"
+                           , SetColor Foreground Dull Black ]
+                       putStr [chr 9650] --[chr 9968]
 
 drawBiome Grassland = do  setSGR [ SetConsoleIntensity BoldIntensity
                            , SetColor Foreground Dull Green ]
-                          putStr "_"
+                          putStr [chr 9644]-- "_"
 
 drawBiome SandDesert = do  setSGR [ SetConsoleIntensity BoldIntensity
                             , SetColor Foreground Dull Yellow ]
-                           putStr "_"
+                           putStr [chr 9926]
 
 drawBiome Savanna = do     setSGR [ SetConsoleIntensity BoldIntensity
                             , SetColor Foreground Dull Yellow ]
-                           putStr "T"
+                           putStr [chr 9641]
 
 drawBiome RockDesert = do  setSGR [ SetConsoleIntensity BoldIntensity
-                            , SetColor Foreground Dull Cyan ]
-                           putStr "_"
+                            , SetColor Foreground Dull Black ]
+                           putStr [chr 9926]
 
 drawBiome _ = do  setSGR [ SetConsoleIntensity BoldIntensity
                           , SetColor Foreground Dull Red ]
@@ -128,7 +129,7 @@ drawHero pos@(Pos heroX heroY) explorer = do
   let (Pos heroOnScreenX heroOnScreenY) = heroPosOnScreen pos explorer
   setCursorPosition heroOnScreenY heroOnScreenX
   setSGR [ SetConsoleIntensity BoldIntensity
-         , SetColor Foreground Vivid Blue ]
+         , SetColor Foreground Vivid Red ]
   putStr "@"
   return explorer { explorerScreen = setScreenCell (explorerScreen explorer) (ScreenPos heroOnScreenX heroOnScreenY) CellPlayer }
 
