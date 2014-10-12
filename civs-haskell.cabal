@@ -23,5 +23,6 @@ executable civs
                      namegen-haskell >= 0.1,
                      random >= 1.0,
                      ansi-terminal >= 0.6,
-                     matrix >= 0.3
+                     matrix >= 0.3,
+                     terminal-size
   hs-source-dirs:  src

@@ -5,6 +5,7 @@ import System.IO
 import Civs.Model
 import Data.Char
 import qualified Data.Sequence as S
+import qualified System.Console.Terminal.Size as TS
 
 data Input = Up
            | Down
@@ -27,7 +28,7 @@ drawStatus (Pos heroX heroY) explorer = do
   setCursorPosition screenHeight 0
   setSGR [ SetConsoleIntensity BoldIntensity
        , SetColor Foreground Vivid Blue ]
-  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "]" ++ [chr 9650]++ [chr 328]++ [chr 329]++ [chr 330]++ [chr 331]++ [chr 332]++ [chr 333]++ [chr 334]++ [chr 335]++ [chr 336]
+  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "]"
 
 gameLoop :: Game -> Explorer -> IO()
 gameLoop game explorer = do
@@ -165,8 +166,18 @@ handleDir game explorer input = gameLoop game (explorer { explorerPos = newCoord
                     Civs.ConsoleExplorer.Left  -> Pos (max (heroX - 1) 0) heroY
                     Civs.ConsoleExplorer.Right -> Pos (min (heroX + 1) ((getWidth w) - 1)) heroY
 
-screenWidth  = 80
-screenHeight = 40
+dynScreenWidth  = do res <- TS.size
+                     case res of
+                       Just (TS.Window h w) -> return w
+                       Nothing -> return 80
+
+dynScreenHeight = do res <- TS.size
+                     case res of
+                       Just (TS.Window h w) -> return h
+                       Nothing -> return 30
+
+screenWidth = 80
+screenHeight = 30
 
 initialScreen :: Screen
 initialScreen = S.replicate screenHeight row
