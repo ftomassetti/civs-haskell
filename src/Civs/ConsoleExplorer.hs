@@ -22,15 +22,22 @@ type Screen = S.Seq (S.Seq Cell)
 
 data Explorer = Explorer { explorerPos :: Position, explorerScreen :: Screen }
 
+drawStatus (Pos heroX heroY) explorer = do
+  setCursorPosition screenHeight 0
+  setSGR [ SetConsoleIntensity BoldIntensity
+       , SetColor Foreground Vivid Blue ]
+  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "]     "
+
 gameLoop :: Game -> Explorer -> IO()
 gameLoop game explorer = do
   let hero = explorerPos explorer
   explorer'  <- drawWorld game explorer
-  explorer'' <- drawHero  hero explorer
+  explorer'' <- drawHero  hero explorer'
+  drawStatus hero explorer''
   input <- getInput
   case input of
     Exit -> handleExit
-    _    -> handleDir game explorer' input
+    _    -> handleDir game explorer'' input
 
 data ScreenPos = ScreenPos { spRow :: Int, spCol :: Int}
 
@@ -112,12 +119,18 @@ drawWorld game explorer = do
   let cells = [(x,y) | x <- [0..(screenWidth-1)], y <- [0..(screenHeight-1)]]
   drawCells game explorer cells
 
-drawHero (Pos heroX heroY) explorer = do
-  setCursorPosition 20 20
+heroPosOnScreen (Pos heroX heroY) explorer =
+  let hw = screenWidth `div` 2
+      hh = screenHeight `div` 2
+  in Pos hw hh
+
+drawHero pos@(Pos heroX heroY) explorer = do
+  let (Pos heroOnScreenX heroOnScreenY) = heroPosOnScreen pos explorer
+  setCursorPosition heroOnScreenY heroOnScreenX
   setSGR [ SetConsoleIntensity BoldIntensity
          , SetColor Foreground Vivid Blue ]
   putStr "@"
-  return explorer { explorerScreen = setScreenCell (explorerScreen explorer) (ScreenPos 20 20) CellPlayer }
+  return explorer { explorerScreen = setScreenCell (explorerScreen explorer) (ScreenPos heroOnScreenX heroOnScreenY) CellPlayer }
 
 -- when the user wants to exit we give them a thank you
 -- message and then reshow the cursor
@@ -144,11 +157,12 @@ getInput = do
 handleDir :: Game -> Explorer -> Input -> IO()
 handleDir game explorer input = gameLoop game (explorer { explorerPos = newCoord })
   where  Pos heroX heroY = explorerPos explorer
+         w = gameWorld game
          newCoord = case input of
-                    Up    -> Pos heroX (heroY - 1)
-                    Down  -> Pos heroX (heroY + 1)
-                    Civs.ConsoleExplorer.Left  -> Pos (heroX - 1) heroY
-                    Civs.ConsoleExplorer.Right -> Pos (heroX + 1) heroY
+                    Up    -> Pos heroX (max (heroY - 1) 0)
+                    Down  -> Pos heroX (min (heroY + 1) ((getHeight w) - 1))
+                    Civs.ConsoleExplorer.Left  -> Pos (max (heroX - 1) 0) heroY
+                    Civs.ConsoleExplorer.Right -> Pos (min (heroX + 1) ((getWidth w) - 1)) heroY
 
 screenWidth  = 80
 screenHeight = 40

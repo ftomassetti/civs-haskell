@@ -35,7 +35,7 @@ data Name = Name String | Unnamed
             deriving Show
 
 data Position = Pos { posx :: Int, posy :: Int } 
-                deriving Show
+                deriving (Show, Eq)
 
 data Group = Group { id :: Id, name :: Name, groupPos :: Position }
              deriving Show
@@ -85,16 +85,22 @@ toBiome s = case s of
             "savanna" -> Savanna
             _ -> error $ "Unknown: " ++ s
 
-getBiome :: World -> Position -> Biome
-getBiome w pos = let biomeMatrix = getWorldEntry w "biome"
-                     biomeMatrix' = Civs.Pickle.toList biomeMatrix
-                     x = posx pos
-                     y = posy pos
-                     row  = Civs.Pickle.toList $ biomeMatrix' !! y
-                     cell = row !! x
-                     cell' = toString cell
-                     cell'' = toBiome cell'
-                 in cell''
+getBiomeStrict :: World -> Position -> Biome
+getBiomeStrict w pos = let biomeMatrix = getWorldEntry w "biome"
+                           biomeMatrix' = Civs.Pickle.toList biomeMatrix
+                           x = posx pos
+                           y = posy pos
+                           row  = Civs.Pickle.toList $ biomeMatrix' !! y
+                           cell = row !! x
+                           cell' = toString cell
+                           cell'' = toBiome cell'
+                       in cell''
+
+
+isValidPos :: World -> Position -> Bool
+isValidPos w (Pos x y) = x>=0 && y>=0 && x<(getWidth w) && y<(getHeight w)
+
+getBiome world pos = if isValidPos world pos then getBiomeStrict world pos else Ocean
 
 isLand w pos = getBiome w pos /= Ocean
 
