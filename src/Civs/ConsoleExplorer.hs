@@ -25,7 +25,8 @@ type Screen = S.Seq (S.Seq Cell)
 data Explorer = Explorer { explorerPos :: Position, explorerScreen :: Screen }
 
 drawStatus (Pos heroX heroY) explorer = do
-  setCursorPosition screenHeight 0
+  sh <- dynScreenHeight
+  setCursorPosition sh 0
   setSGR [ SetConsoleIntensity BoldIntensity
        , SetColor Foreground Vivid Blue ]
   putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "]"
@@ -118,16 +119,19 @@ drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
 
 drawWorld :: Game -> Explorer -> IO Explorer
 drawWorld game explorer = do
-  let cells = [(x,y) | x <- [0..(screenWidth-1)], y <- [0..(screenHeight-1)]]
+  (sw,sh) <- dynScreenSize
+  let cells = [(x,y) | x <- [0..(sw-1)], y <- [0..(sh-1)]]
   drawCells game explorer cells
 
 heroPosOnScreen (Pos heroX heroY) explorer =
-  let hw = screenWidth `div` 2
-      hh = screenHeight `div` 2
-  in Pos hw hh
+  do sw <- dynScreenWidth
+     sh <- dynScreenHeight
+     let hw = sw `div` 2
+     let hh = sh `div` 2
+     return $ Pos hw hh
 
 drawHero pos@(Pos heroX heroY) explorer = do
-  let (Pos heroOnScreenX heroOnScreenY) = heroPosOnScreen pos explorer
+  (Pos heroOnScreenX heroOnScreenY) <- heroPosOnScreen pos explorer
   setCursorPosition heroOnScreenY heroOnScreenX
   setSGR [ SetConsoleIntensity BoldIntensity
          , SetColor Foreground Vivid Red ]
@@ -166,23 +170,31 @@ handleDir game explorer input = gameLoop game (explorer { explorerPos = newCoord
                     Civs.ConsoleExplorer.Left  -> Pos (max (heroX - 1) 0) heroY
                     Civs.ConsoleExplorer.Right -> Pos (min (heroX + 1) ((getWidth w) - 1)) heroY
 
-dynScreenWidth  = do res <- TS.size
-                     case res of
-                       Just (TS.Window h w) -> return w
-                       Nothing -> return 80
+dynScreenSize :: IO (Int, Int)
+dynScreenSize = do res <- TS.size
+                   case res of
+                     Just (TS.Window h w) -> return (w,h)
+                     Nothing -> return (80,25)
 
-dynScreenHeight = do res <- TS.size
-                     case res of
-                       Just (TS.Window h w) -> return h
-                       Nothing -> return 30
+dynScreenWidth :: IO Int
+dynScreenWidth = do t <- dynScreenSize
+                    let (w,h) = t
+                    return w
 
-screenWidth = 80
-screenHeight = 30
+dynScreenHeight :: IO Int
+dynScreenHeight = do t <- dynScreenSize
+                     let (w,h) = t
+                     return h
 
-initialScreen :: Screen
-initialScreen = S.replicate screenHeight row
-                where row = S.replicate screenWidth EmptyCell
+--screenWidth = 80
+--screenHeight = 30
 
-initialExplorer :: Explorer
-initialExplorer      = Explorer pos initialScreen
-                       where pos = Pos 100 100
+initialScreen :: IO Screen
+initialScreen = do (w,h) <- dynScreenSize
+                   let row = S.replicate w EmptyCell
+                   return $ S.replicate h row
+
+initialExplorer :: IO Explorer
+initialExplorer = do is <- initialScreen
+                     return $ Explorer pos is
+                     where pos = Pos 100 100

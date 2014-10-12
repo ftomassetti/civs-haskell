@@ -60,6 +60,6 @@ main = do putStrLn "Start"
           hSetBuffering stdout NoBuffering
           hideCursor
           setTitle "Civs"
-          let e = initialExplorer
+          e <- initialExplorer
           clearScreen
           gameLoop g e
