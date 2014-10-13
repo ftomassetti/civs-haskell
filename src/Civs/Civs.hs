@@ -16,6 +16,8 @@ import System.Console.ANSI
 import System.IO
 import Civs.ConsoleExplorer
 
+import UI.NCurses
+
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
@@ -48,18 +50,41 @@ generateGame world seed ngroups = helper g0 ss0 ngroups
                                         helper g (s:ss) n = helper (generateGroup g s) ss (n-1)
 
 main :: IO ()
-main = do putStrLn "Start"
-          byteString <- S.readFile worldFileName :: IO S.ByteString
-          world' <- process (PickleStatus [] empty) byteString
-          let world = World world'
-          let g = generateGame world 1 3
-          putStrLn $ "Game: " ++ (show g)
-          putStrLn "Done"
-          hSetEcho stdin False
-          hSetBuffering stdin  NoBuffering
-          hSetBuffering stdout NoBuffering
-          hideCursor
-          setTitle "Civs"
-          let e = initialExplorer
-          clearScreen
-          gameLoop g e
+main = runCurses $ do
+    setEcho False
+    --w <- defaultWindow
+    w <- newWindow 30 80 0 0
+    updateWindow w $ do
+        moveCursor 1 10
+        drawString "Hello world!"
+        moveCursor 3 10
+        drawString "(press q to quit)"
+        moveCursor 0 0
+    render
+    waitFor w (\ev -> ev == EventCharacter 'q' || ev == EventCharacter 'Q')
+
+waitFor :: Window -> (Event -> Bool) -> Curses ()
+waitFor w p = loop where
+    loop = do
+        ev <- getEvent w Nothing
+        case ev of
+            Nothing -> loop
+            Just ev' -> if p ev' then return () else loop
+
+
+main2 :: IO ()
+main2 = do    putStrLn "Start"
+              byteString <- S.readFile worldFileName :: IO S.ByteString
+              world' <- process (PickleStatus [] empty) byteString
+              let world = World world'
+              let g = generateGame world 1 3
+              putStrLn $ "Game: " ++ (show g)
+              putStrLn "Done"
+              hSetEcho stdin False
+              hSetBuffering stdin  NoBuffering
+              hSetBuffering stdout NoBuffering
+              hideCursor
+              setTitle "Civs"
+              let e = initialExplorer
+              clearScreen
+              gameLoop g e
