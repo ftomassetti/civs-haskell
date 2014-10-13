@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 import Civs.Model
 import Civs.Pickle
@@ -15,7 +16,9 @@ import System.Random
 import System.Console.ANSI
 import System.IO
 import Civs.ConsoleExplorer
+import Control.Monad
 import Control.Concurrent
+import Control.Concurrent.STM
 
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
@@ -58,21 +61,18 @@ dummySim syncScreen v = do takeMVar syncScreen
                            threadDelay 1000000
                            dummySim syncScreen (v+1)
 
+initialGame worldFileName = do
+    byteString <- S.readFile worldFileName :: IO S.ByteString
+    world' <- process (PickleStatus [] empty) byteString
+    let world = World world'
+    return $ generateGame world 1 3
+
+
 main :: IO ()
 main = do syncScreen <- newMVar ()
-          putStrLn "Start"
-          byteString <- S.readFile worldFileName :: IO S.ByteString
-          world' <- process (PickleStatus [] empty) byteString
-          let world = World world'
-          let g = generateGame world 1 3
-          putStrLn $ "Game: " ++ (show g)
-          putStrLn "Done"
-          hSetEcho stdin False
-          hSetBuffering stdin  NoBuffering
-          hSetBuffering stdout NoBuffering
-          hideCursor
-          setTitle "Civs"
+          g <- initialGame worldFileName
+          syncGame :: (TVar Game)  <- atomically $ newTVar $ g
           let e = initialExplorer syncScreen
-          clearScreen
+          initScreen
           forkIO $ simulation syncScreen
-          gameLoop g e
+          gameLoop syncGame e

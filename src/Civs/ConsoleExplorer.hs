@@ -5,8 +5,14 @@ import System.IO
 import Civs.Model
 import Data.Char
 import Control.Concurrent
+import Control.Concurrent.STM
 import qualified Data.Sequence as S
 import qualified System.Console.Terminal.Size as TS
+import Control.Monad
+import Control.Concurrent
+import Control.Concurrent.STM
+
+atomRead = atomically . readTVar
 
 data Input = Up
            | Down
@@ -38,11 +44,12 @@ drawNews msg = do setCursorPosition (screenHeight+1) 0
                          , SetColor Foreground Vivid Black ]
                   putStr $ "News: " ++ msg
 
-gameLoop :: Game -> Explorer -> IO()
-gameLoop game explorer = do
+gameLoop :: (TVar Game) -> Explorer -> IO()
+gameLoop syncGame explorer = do
   let syncScreen = explorerSyncScreen explorer
   let hero = explorerPos explorer
   takeMVar syncScreen
+  game <- atomRead syncGame
   explorer'  <- drawWorld game explorer
   explorer'' <- drawHero  hero explorer'
   drawStatus hero game explorer''
@@ -50,7 +57,7 @@ gameLoop game explorer = do
   input <- getInput
   case input of
     Exit -> handleExit
-    _    -> handleDir game explorer'' input
+    _    -> handleDir syncGame explorer'' input
 
 data ScreenPos = ScreenPos { spRow :: Int, spCol :: Int}
 
@@ -166,17 +173,21 @@ getInput = do
     'd' -> return Civs.ConsoleExplorer.Right
     _ -> getInput
 
+newCoord input heroX heroY world = case input of
+    Up    -> Pos heroX (max (heroY - 1) 0)
+    Down  -> Pos heroX (min (heroY + 1) ((getHeight world) - 1))
+    Civs.ConsoleExplorer.Left  -> Pos (max (heroX - 1) 0) heroY
+    Civs.ConsoleExplorer.Right -> Pos (min (heroX + 1) ((getWidth world) - 1)) heroY
+
 -- given a world and a direction, 'adjust' the hero's position, and loop
 -- with our updated hero
-handleDir :: Game -> Explorer -> Input -> IO()
-handleDir game explorer input = gameLoop game (explorer { explorerPos = newCoord })
-  where  Pos heroX heroY = explorerPos explorer
-         w = gameWorld game
-         newCoord = case input of
-                    Up    -> Pos heroX (max (heroY - 1) 0)
-                    Down  -> Pos heroX (min (heroY + 1) ((getHeight w) - 1))
-                    Civs.ConsoleExplorer.Left  -> Pos (max (heroX - 1) 0) heroY
-                    Civs.ConsoleExplorer.Right -> Pos (min (heroX + 1) ((getWidth w) - 1)) heroY
+handleDir :: (TVar Game) -> Explorer -> Input -> IO()
+handleDir syncGame explorer input = do
+    game <- atomRead syncGame
+    let w = gameWorld game
+    let Pos heroX heroY = explorerPos explorer
+    let nc = newCoord input heroX heroY w
+    gameLoop syncGame (explorer { explorerPos = nc })
 
 dynScreenWidth  = do res <- TS.size
                      case res of
@@ -187,6 +198,14 @@ dynScreenHeight = do res <- TS.size
                      case res of
                        Just (TS.Window h w) -> return h
                        Nothing -> return 30
+
+initScreen = do
+    hSetEcho stdin False
+    hSetBuffering stdin  NoBuffering
+    hSetBuffering stdout NoBuffering
+    hideCursor
+    setTitle "Civs"
+    clearScreen
 
 screenWidth = 80
 screenHeight = 30

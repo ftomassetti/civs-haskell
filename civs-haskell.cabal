@@ -24,5 +24,6 @@ executable civs
                      random >= 1.0,
                      ansi-terminal >= 0.6,
                      matrix >= 0.3,
-                     terminal-size
+                     terminal-size,
+                     stm
   hs-source-dirs:  src
