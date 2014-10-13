@@ -62,7 +62,12 @@ type RandomIntSeq = [Int]
 data Event = NoEvent
              | NewGroup
              | NewSettlement Int
-             deriving (Eq, Show)
+             deriving Eq
+
+instance Show Event where
+    show NoEvent = "<nothing>"
+    show NewGroup = "Creating new group"
+    show (NewSettlement id) = "Creating new settlement for group " ++ (show id)
 
 simEvent :: RandomIntSeq -> (TVar Game) -> IO (Event, RandomIntSeq)
 simEvent randomSeq syncGame = do
