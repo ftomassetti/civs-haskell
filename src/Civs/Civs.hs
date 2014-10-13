@@ -51,15 +51,38 @@ generateGame world seed ngroups = helper g0 ss0 ngroups
                                         helper g ss 0 = g
                                         helper g (s:ss) n = helper (generateGroup g s) ss (n-1)
 
-simulation :: (MVar ()) -> IO ()
-simulation syncScreen = dummySim syncScreen 0
+simulation :: (TVar Game) -> (MVar ()) -> IO ()
+simulation syncGame syncScreen = do
+    rg <- newStdGen
+    let ss = randoms rg :: [Int]
+    simLoop syncGame syncScreen ss
 
-dummySim :: (MVar ()) -> Int -> IO ()
-dummySim syncScreen v = do takeMVar syncScreen
-                           drawNews $ "heeeellooo "++(show v)
-                           putMVar syncScreen ()
-                           threadDelay 1000000
-                           dummySim syncScreen (v+1)
+type RandomIntSeq = [Int]
+
+data Event = NoEvent
+             | NewGroup
+             | NewSettlement Int
+             deriving (Eq, Show)
+
+simEvent :: RandomIntSeq -> (TVar Game) -> IO (Event, RandomIntSeq)
+simEvent randomSeq syncGame = do
+    game <- atomRead syncGame
+    return $ case randomValue' of
+        0 -> (NoEvent, tail randomSeq)
+        1 -> (NewGroup, tail randomSeq)
+        2 -> let groups = gameGroups game
+             in (NewSettlement $ groupId (head groups), tail randomSeq)
+    where randomValue = head randomSeq
+          randomValue' = randomValue `mod` 3
+
+simLoop :: (TVar Game) -> (MVar ()) -> RandomIntSeq -> IO ()
+simLoop syncGame syncScreen randomInts = do
+    takeMVar syncScreen
+    (event,randomInts') <- simEvent randomInts syncGame
+    drawNews $ " "++ (show event)
+    putMVar syncScreen ()
+    threadDelay 1000000
+    simLoop syncGame syncScreen randomInts'
 
 initialGame worldFileName = do
     byteString <- S.readFile worldFileName :: IO S.ByteString
@@ -67,12 +90,11 @@ initialGame worldFileName = do
     let world = World world'
     return $ generateGame world 1 3
 
-
 main :: IO ()
 main = do syncScreen <- newMVar ()
           g <- initialGame worldFileName
           syncGame :: (TVar Game)  <- atomically $ newTVar $ g
           let e = initialExplorer syncScreen
           initScreen
-          forkIO $ simulation syncScreen
+          forkIO $ simulation syncGame syncScreen
           gameLoop syncGame e

@@ -37,7 +37,7 @@ data Name = Name String | Unnamed
 data Position = Pos { posx :: Int, posy :: Int } 
                 deriving (Show, Eq)
 
-data Group = Group { id :: Id, name :: Name, groupPos :: Position }
+data Group = Group { groupId :: Id, name :: Name, groupPos :: Position }
              deriving Show
 
 data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group] }

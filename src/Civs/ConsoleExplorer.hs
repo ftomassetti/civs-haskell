@@ -42,7 +42,7 @@ drawStatus (Pos heroX heroY) game explorer = do
 drawNews msg = do setCursorPosition (screenHeight+1) 0
                   setSGR [ SetConsoleIntensity BoldIntensity
                          , SetColor Foreground Vivid Black ]
-                  putStr $ "News: " ++ msg
+                  putStr $ "News: " ++ msg ++ "                 "
 
 gameLoop :: (TVar Game) -> Explorer -> IO()
 gameLoop syncGame explorer = do
