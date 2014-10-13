@@ -15,6 +15,7 @@ import System.Random
 import System.Console.ANSI
 import System.IO
 import Civs.ConsoleExplorer
+import Control.Concurrent
 
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
@@ -47,8 +48,19 @@ generateGame world seed ngroups = helper g0 ss0 ngroups
                                         helper g ss 0 = g
                                         helper g (s:ss) n = helper (generateGroup g s) ss (n-1)
 
+simulation :: (MVar ()) -> IO ()
+simulation syncScreen = dummySim syncScreen 0
+
+dummySim :: (MVar ()) -> Int -> IO ()
+dummySim syncScreen v = do takeMVar syncScreen
+                           drawNews $ "heeeellooo "++(show v)
+                           putMVar syncScreen ()
+                           threadDelay 1000000
+                           dummySim syncScreen (v+1)
+
 main :: IO ()
-main = do putStrLn "Start"
+main = do syncScreen <- newMVar ()
+          putStrLn "Start"
           byteString <- S.readFile worldFileName :: IO S.ByteString
           world' <- process (PickleStatus [] empty) byteString
           let world = World world'
@@ -60,6 +72,7 @@ main = do putStrLn "Start"
           hSetBuffering stdout NoBuffering
           hideCursor
           setTitle "Civs"
-          let e = initialExplorer
+          let e = initialExplorer syncScreen
           clearScreen
+          forkIO $ simulation syncScreen
           gameLoop g e

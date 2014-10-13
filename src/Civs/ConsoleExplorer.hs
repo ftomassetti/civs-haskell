@@ -4,6 +4,7 @@ import System.Console.ANSI
 import System.IO
 import Civs.Model
 import Data.Char
+import Control.Concurrent
 import qualified Data.Sequence as S
 import qualified System.Console.Terminal.Size as TS
 
@@ -22,7 +23,7 @@ data Cell = CellBiome Biome
 -- All the info represented on the screen
 type Screen = S.Seq (S.Seq Cell)
 
-data Explorer = Explorer { explorerPos :: Position, explorerScreen :: Screen }
+data Explorer = Explorer { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
 
 drawStatus (Pos heroX heroY) game explorer = do
   setCursorPosition screenHeight 0
@@ -32,12 +33,20 @@ drawStatus (Pos heroX heroY) game explorer = do
   let biome = getBiome w (Pos heroX heroY)
   putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++(show biome)++ "       "
 
+drawNews msg = do setCursorPosition (screenHeight+1) 0
+                  setSGR [ SetConsoleIntensity BoldIntensity
+                         , SetColor Foreground Vivid Black ]
+                  putStr $ "News: " ++ msg
+
 gameLoop :: Game -> Explorer -> IO()
 gameLoop game explorer = do
+  let syncScreen = explorerSyncScreen explorer
   let hero = explorerPos explorer
+  takeMVar syncScreen
   explorer'  <- drawWorld game explorer
   explorer'' <- drawHero  hero explorer'
   drawStatus hero game explorer''
+  putMVar syncScreen ()
   input <- getInput
   case input of
     Exit -> handleExit
@@ -186,6 +195,6 @@ initialScreen :: Screen
 initialScreen = S.replicate screenHeight row
                 where row = S.replicate screenWidth EmptyCell
 
-initialExplorer :: Explorer
-initialExplorer      = Explorer pos initialScreen
-                       where pos = Pos 100 100
+initialExplorer :: MVar () -> Explorer
+initialExplorer syncScreen = Explorer pos initialScreen syncScreen
+                             where pos = Pos 100 100
