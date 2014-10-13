@@ -80,10 +80,17 @@ simEvent randomSeq syncGame = do
     where randomValue = head randomSeq
           randomValue' = randomValue `mod` 3
 
+executeEvent syncGame NoEvent = return ()
+
+executeEvent syncGame NewGroup = return ()
+
+executeEvent syncGame (NewSettlement groupId) = return ()
+
 simLoop :: (TVar Game) -> (MVar ()) -> RandomIntSeq -> IO ()
 simLoop syncGame syncScreen randomInts = do
     takeMVar syncScreen
     (event,randomInts') <- simEvent randomInts syncGame
+    executeEvent syncGame event
     drawNews $ " "++ (show event)
     putMVar syncScreen ()
     threadDelay 1000000
