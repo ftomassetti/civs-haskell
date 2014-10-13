@@ -24,18 +24,20 @@ type Screen = S.Seq (S.Seq Cell)
 
 data Explorer = Explorer { explorerPos :: Position, explorerScreen :: Screen }
 
-drawStatus (Pos heroX heroY) explorer = do
+drawStatus (Pos heroX heroY) game explorer = do
   setCursorPosition screenHeight 0
   setSGR [ SetConsoleIntensity BoldIntensity
        , SetColor Foreground Vivid Blue ]
-  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "]"
+  let w = gameWorld game
+  let biome = getBiome w (Pos heroX heroY)
+  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++(show biome)++ "       "
 
 gameLoop :: Game -> Explorer -> IO()
 gameLoop game explorer = do
   let hero = explorerPos explorer
   explorer'  <- drawWorld game explorer
   explorer'' <- drawHero  hero explorer'
-  drawStatus hero explorer''
+  drawStatus hero game explorer''
   input <- getInput
   case input of
     Exit -> handleExit
@@ -107,7 +109,8 @@ drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
                                               let Pos heroX heroY = explorerPos explorer
                                               let screen = explorerScreen explorer
                                               let w = gameWorld game
-                                              let biome = getBiome w (Pos (x+heroX) (y+heroY))
+                                              let (Pos baseX baseY) = heroPosOnScreen (Pos heroX heroY) explorer
+                                              let biome = getBiome w (Pos (x+heroX-baseX) (y+heroY-baseY))
                                               let currCellOnScreen = getScreenCell screen (ScreenPos y x)
                                               explorer' <- if currCellOnScreen /= CellBiome biome
                                                            then do drawBiome biome
