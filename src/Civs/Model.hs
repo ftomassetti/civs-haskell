@@ -3,11 +3,9 @@
 module Civs.Model where
 
 import Civs.Pickle
-import Data.List
-import Data.Word
 import Data.Map
-import Data.Char
 import System.Random
+import Namegen
 
 -------------------------------------------------
 -- Model
@@ -28,10 +26,12 @@ data Name = Name String | Unnamed
 data Position = Pos { posx :: Int, posy :: Int } 
                 deriving (Show, Eq)
 
-data Group = Group { groupId :: Id, groupName :: Name, groupPos :: Position }
+data Group = Group { groupId :: Id, groupName :: Name, groupPos :: Position, groupLanguage :: Language }
              deriving Show
 
-data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group] }
+type LanguageSamples = [[String]]
+
+data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group], gameLanguageSamples :: LanguageSamples }
             deriving Show
 
 data Biome = Ocean
@@ -129,8 +129,37 @@ randomPos world seed = Pos x y
 randomLandPos world seed = if isLand world pos then pos else randomPos world (nextSeed seed)
                            where pos = randomPos world seed
 
+generateLanguage :: [String] -> Int -> Language
+generateLanguage samples seed = fromSamples samples
+
+takeRandom :: Int -> [a] -> Int -> [a]
+takeRandom seed [] n = error "List is empty"
+takeRandom seed list n = helper ss0 list n []
+                         where rg = mkStdGen seed
+                               ss0 = randoms rg :: [Int]
+                               helper :: [Int] -> [a] -> Int -> [a] -> [a]
+                               helper ss list 0 taken = taken
+                               helper ss list n taken = let index = (head ss) `mod` (length list)
+                                                            extracted = list !! index
+                                                        in helper (tail ss) list (n-1) (extracted:taken)
+
+extractRandomSample :: LanguageSamples -> Int -> [String]
+extractRandomSample allSamples seed = samplesFromA ++ samplesFromB
+                                      where rg = mkStdGen seed
+                                            ss0 = randoms rg :: [Int]
+                                            indexA = (ss0 !! 0) `mod` (length allSamples)
+                                            indexB = (ss0 !! 1) `mod` (length allSamples)
+                                            howManyFromA = (ss0 !! 2) `mod` 250
+                                            howManyFromB = 250 - howManyFromA
+                                            samplesFromA = takeRandom (ss0 !! 3) (allSamples !! indexA) howManyFromA
+                                            samplesFromB = takeRandom (ss0 !! 4) (allSamples !! indexB) howManyFromB
+
 generateGroup :: Game -> Int -> (Group, Game)
 generateGroup g seed = (ng, g' { gameGroups = ng : (gameGroups g)})
                        where pos = randomLandPos (gameWorld g) seed
-                             ng = Group (gameNextId g) (Name "Lupozzi") pos
+                             allSamples = gameLanguageSamples g
+                             samples = extractRandomSample allSamples seed
+                             language = generateLanguage samples seed
+                             name = generateName language seed
+                             ng = Group (gameNextId g) (Name name) pos language
                              g' = g { gameNextId = 1 + gameNextId g}
