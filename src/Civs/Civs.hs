@@ -55,5 +55,5 @@ main = do syncScreen <- newMVar ()
           syncGame :: (TVar Game)  <- atomically $ newTVar $ g
           let e = initialExplorer syncScreen
           initScreen
-          forkIO $ simulation syncGame syncScreen
+          startSimulation syncGame syncScreen
           gameLoop syncGame e

@@ -7,6 +7,8 @@ import Civs.ConsoleExplorer
 import Control.Concurrent
 import Control.Concurrent.STM
 
+startSimulation syncGame syncScreen = forkIO $ simulation syncGame syncScreen
+
 simulation :: (TVar Game) -> (MVar ()) -> IO ()
 simulation syncGame syncScreen = do
     rg <- newStdGen
