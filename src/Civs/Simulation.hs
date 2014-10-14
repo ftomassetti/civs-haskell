@@ -1,6 +1,7 @@
 module Civs.Simulation where
 
 import Civs.Model
+import Civs.Base
 
 import System.Random
 import Civs.ConsoleExplorer
@@ -19,10 +20,16 @@ groupBalancer syncGame syncScreen = do
         let ss = randoms rg :: [Int]
         loop syncGame syncScreen ss
     where loop syncGame syncScreen ri = do  takeMVar syncScreen
-                                            drawNews $ " Balancer running..."
+                                            game <- atomRead syncGame
+                                            let groups = gameGroups game
+                                            if (length groups) < 5
+                                                then do drawNews $ "Balancer: creating group ("++(show $ length groups)++")"
+                                                        let game' = generateGroup game (head ri)
+                                                        atomWrite syncGame game'
+                                                else drawNews $ "Balancer: enough groups ("++(show $ length groups)++")"
                                             putMVar syncScreen ()
-                                            threadDelay 2500000
-                                            loop syncGame syncScreen ri
+                                            threadDelay 4500000
+                                            loop syncGame syncScreen (tail ri)
 
 simulation :: (TVar Game) -> (MVar ()) -> IO ()
 simulation syncGame syncScreen = do
@@ -47,11 +54,10 @@ simEvent randomSeq syncGame = do
     game <- atomRead syncGame
     return $ case randomValue' of
         0 -> (NoEvent, tail randomSeq)
-        1 -> (NewGroup, tail randomSeq)
-        2 -> let groups = gameGroups game
+        1 -> let groups = gameGroups game
              in (NewSettlement $ groupId (head groups), tail randomSeq)
     where randomValue = head randomSeq
-          randomValue' = randomValue `mod` 3
+          randomValue' = randomValue `mod` 2
 
 executeEvent syncGame NoEvent = return ()
 

@@ -15,25 +15,6 @@ import Control.Concurrent.STM
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
-nextSeed :: Int -> Int
-nextSeed seed = head ss
-                where rg = mkStdGen seed
-                      ss = randoms rg :: [Int]
-
-randomPos world seed = Pos x y
-                       where rg = mkStdGen seed
-                             ss0 = randoms rg :: [Int]
-                             x = (ss0 !! 0) `mod` (getWidth world)
-                             y = (ss0 !! 1) `mod` (getHeight world)
-
-randomLandPos world seed = if isLand world pos then pos else randomPos world (nextSeed seed)
-                           where pos = randomPos world seed
-
-generateGroup :: Game -> Int -> Game
-generateGroup g seed = g' { gameGroups = ng : (gameGroups g)}
-                       where pos = randomLandPos (gameWorld g) seed
-                             ng = Group (gameNextId g) (Name "Lupozzi") pos
-                             g' = g { gameNextId = 1 + gameNextId g}
 
 generateGame :: World -> Int -> Int -> Game
 generateGame world seed ngroups = helper g0 ss0 ngroups

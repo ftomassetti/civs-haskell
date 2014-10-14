@@ -2,6 +2,7 @@ module Civs.ConsoleExplorer where
 
 import System.Console.ANSI
 import System.IO
+import Civs.Base
 import Civs.Model
 import Data.Char
 import Control.Concurrent
@@ -11,8 +12,6 @@ import qualified System.Console.Terminal.Size as TS
 import Control.Monad
 import Control.Concurrent
 import Control.Concurrent.STM
-
-atomRead = atomically . readTVar
 
 data Input = Up
            | Down

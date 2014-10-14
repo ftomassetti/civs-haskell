@@ -7,16 +7,7 @@ import Data.List
 import Data.Word
 import Data.Map
 import Data.Char
-
--------------------------------------------------
--- Basic
--------------------------------------------------
-
-hasRepetitions :: (Eq a) => [a] -> Bool
-hasRepetitions xs = nub xs /= xs
-
-assert false msg _ = error ("Assertion failed: " ++ msg)
-assert true  msg x = x
+import System.Random
 
 -------------------------------------------------
 -- Model
@@ -123,3 +114,23 @@ move world pos dx dy = let Pos x y = pos
                            nx = x+dx
                            ny = y+dy
                        in if (nx>0) && (ny>0) && (nx<w) && (ny<h) then Just (Pos nx ny) else Nothing
+
+nextSeed :: Int -> Int
+nextSeed seed = head ss
+                where rg = mkStdGen seed
+                      ss = randoms rg :: [Int]
+
+randomPos world seed = Pos x y
+                       where rg = mkStdGen seed
+                             ss0 = randoms rg :: [Int]
+                             x = (ss0 !! 0) `mod` (getWidth world)
+                             y = (ss0 !! 1) `mod` (getHeight world)
+
+randomLandPos world seed = if isLand world pos then pos else randomPos world (nextSeed seed)
+                           where pos = randomPos world seed
+
+generateGroup :: Game -> Int -> Game
+generateGroup g seed = g' { gameGroups = ng : (gameGroups g)}
+                       where pos = randomLandPos (gameWorld g) seed
+                             ng = Group (gameNextId g) (Name "Lupozzi") pos
+                             g' = g { gameNextId = 1 + gameNextId g}
