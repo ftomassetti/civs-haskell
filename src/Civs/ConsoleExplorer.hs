@@ -29,7 +29,7 @@ data Cell = CellBiome Biome
 -- All the info represented on the screen
 type Screen = S.Seq (S.Seq Cell)
 
-data Explorer = Explorer { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
+data UI = UI { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
 
 drawStatus (Pos heroX heroY) game explorer = do
   setCursorPosition screenHeight 0
@@ -44,7 +44,7 @@ drawNews msg = do setCursorPosition (screenHeight+1) 0
                          , SetColor Foreground Vivid Black ]
                   putStr $ "News: " ++ msg ++ "                                        "
 
-gameLoop :: (TVar Game) -> Explorer -> IO()
+gameLoop :: (TVar Game) -> UI -> IO()
 gameLoop syncGame explorer = do
   let syncScreen = explorerSyncScreen explorer
   let hero = explorerPos explorer
@@ -119,7 +119,7 @@ drawBiome _ = do  setSGR [ SetConsoleIntensity BoldIntensity
                           , SetColor Foreground Dull Red ]
                   putStr "?"
 
-drawCells :: Game -> Explorer -> [(Int,Int)] -> IO Explorer
+drawCells :: Game -> UI -> [(Int,Int)] -> IO UI
 drawCells game explorer [] = return explorer
 drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
                                               let Pos heroX heroY = explorerPos explorer
@@ -135,7 +135,7 @@ drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
                                                            else return explorer
                                               drawCells game explorer' cells
 
-drawWorld :: Game -> Explorer -> IO Explorer
+drawWorld :: Game -> UI -> IO UI
 drawWorld game explorer = do
   let cells = [(x,y) | x <- [0..(screenWidth-1)], y <- [0..(screenHeight-1)]]
   drawCells game explorer cells
@@ -181,7 +181,7 @@ newCoord input heroX heroY world = case input of
 
 -- given a world and a direction, 'adjust' the hero's position, and loop
 -- with our updated hero
-handleDir :: (TVar Game) -> Explorer -> Input -> IO()
+handleDir :: (TVar Game) -> UI -> Input -> IO()
 handleDir syncGame explorer input = do
     game <- atomRead syncGame
     let w = gameWorld game
@@ -214,6 +214,6 @@ initialScreen :: Screen
 initialScreen = S.replicate screenHeight row
                 where row = S.replicate screenWidth EmptyCell
 
-initialExplorer :: MVar () -> Explorer
-initialExplorer syncScreen = Explorer pos initialScreen syncScreen
+initialExplorer :: MVar () -> UI
+initialExplorer syncScreen = UI pos initialScreen syncScreen
                              where pos = Pos 100 100
