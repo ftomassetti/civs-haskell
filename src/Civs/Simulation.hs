@@ -7,7 +7,22 @@ import Civs.ConsoleExplorer
 import Control.Concurrent
 import Control.Concurrent.STM
 
-startSimulation syncGame syncScreen = forkIO $ simulation syncGame syncScreen
+-- |Start all the separate threads for the simulation
+startSimulation syncGame syncScreen = do
+    forkIO $ simulation syncGame syncScreen
+    forkIO $ groupBalancer syncGame syncScreen
+
+-- |This thread creates new group when there are too few
+groupBalancer :: (TVar Game) -> (MVar ()) -> IO ()
+groupBalancer syncGame syncScreen = do
+        rg <- newStdGen
+        let ss = randoms rg :: [Int]
+        loop syncGame syncScreen ss
+    where loop syncGame syncScreen ri = do  takeMVar syncScreen
+                                            drawNews $ " Balancer running..."
+                                            putMVar syncScreen ()
+                                            threadDelay 2500000
+                                            loop syncGame syncScreen ri
 
 simulation :: (TVar Game) -> (MVar ()) -> IO ()
 simulation syncGame syncScreen = do
