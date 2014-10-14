@@ -28,7 +28,7 @@ data Name = Name String | Unnamed
 data Position = Pos { posx :: Int, posy :: Int } 
                 deriving (Show, Eq)
 
-data Group = Group { groupId :: Id, name :: Name, groupPos :: Position }
+data Group = Group { groupId :: Id, groupName :: Name, groupPos :: Position }
              deriving Show
 
 data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group] }
@@ -129,8 +129,8 @@ randomPos world seed = Pos x y
 randomLandPos world seed = if isLand world pos then pos else randomPos world (nextSeed seed)
                            where pos = randomPos world seed
 
-generateGroup :: Game -> Int -> Game
-generateGroup g seed = g' { gameGroups = ng : (gameGroups g)}
+generateGroup :: Game -> Int -> (Group, Game)
+generateGroup g seed = (ng, g' { gameGroups = ng : (gameGroups g)})
                        where pos = randomLandPos (gameWorld g) seed
                              ng = Group (gameNextId g) (Name "Lupozzi") pos
                              g' = g { gameNextId = 1 + gameNextId g}

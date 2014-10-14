@@ -23,9 +23,10 @@ groupBalancer syncGame syncScreen = do
                                             game <- atomRead syncGame
                                             let groups = gameGroups game
                                             if (length groups) < 5
-                                                then do drawNews $ "Balancer: creating group ("++(show $ length groups)++")"
-                                                        let game' = generateGroup game (head ri)
+                                                then do let (gr, game') = generateGroup game (head ri)
                                                         atomWrite syncGame game'
+                                                        let Name sName = groupName gr
+                                                        drawNews $ "Balancer: creating group "++ sName
                                                 else drawNews $ "Balancer: enough groups ("++(show $ length groups)++")"
                                             putMVar syncScreen ()
                                             threadDelay 4500000
@@ -55,7 +56,9 @@ simEvent randomSeq syncGame = do
     return $ case randomValue' of
         0 -> (NoEvent, tail randomSeq)
         1 -> let groups = gameGroups game
-             in (NewSettlement $ groupId (head groups), tail randomSeq)
+             in if length groups > 0
+                then (NewSettlement $ groupId (head groups), tail randomSeq)
+                else (NoEvent, tail randomSeq)
     where randomValue = head randomSeq
           randomValue' = randomValue `mod` 2
 
