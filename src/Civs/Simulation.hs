@@ -70,7 +70,7 @@ simEvent randomSeq syncGame = do
              in if length groupIds > 0
                 then let grId = head groupIds
                          (game',settlId) :: (Game,Int) = generateSettlement game grId randomValue''
-                         _ = atomWrite syncGame game'
+                         _ = do atomWrite syncGame game'
                          settl = getSettlement game' settlId
                      in (NewSettlement grId settl, tail randomSeq)
                 else (NoEvent, tail randomSeq)
