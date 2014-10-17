@@ -213,3 +213,8 @@ generateGroup g seed = (ng, g' { gameGroups = M.insert (groupId ng) ng (gameGrou
                              name = generateName language seed
                              ng = Group (gameNextId g) (Name name) pos language
                              g' = g { gameNextId = 1 + gameNextId g}
+
+containVillage :: Game -> Position -> Bool
+containVillage game pos = helper $ M.elems (gameSettlements game)
+                          where helper [] = False
+                                helper (s:ss) = if (settlPos s)==pos then True else helper ss
