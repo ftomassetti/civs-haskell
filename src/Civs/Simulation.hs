@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Civs.Simulation where
 
 import Civs.Model
@@ -42,13 +45,18 @@ type RandomIntSeq = [Int]
 
 data Event = NoEvent
              | NewGroup
-             | NewSettlement Int
+             | NewSettlement Int Int
              deriving Eq
+
+generateSettlement :: Game -> Int -> Int -> (Game, Int)
+generateSettlement game grId seed = addSettlement game seed grId pos
+                                    where world = gameWorld game
+                                          pos = randomLandPos world seed
 
 instance Show Event where
     show NoEvent = "<nothing>"
     show NewGroup = "Creating new group"
-    show (NewSettlement id) = "Creating new settlement for group " ++ (show id)
+    show (NewSettlement grId settId) = "Creating new settlement for group " ++ (show grId)
 
 simEvent :: RandomIntSeq -> (TVar Game) -> IO (Event, RandomIntSeq)
 simEvent randomSeq syncGame = do
@@ -57,16 +65,20 @@ simEvent randomSeq syncGame = do
         0 -> (NoEvent, tail randomSeq)
         1 -> let groups = gameGroups game
              in if length groups > 0
-                then (NewSettlement $ groupId (head groups), tail randomSeq)
+                then let grId = groupId (head groups)
+                         (game',settlId) :: (Game,Int) = generateSettlement game grId randomValue''
+                         _ = atomWrite syncGame game'
+                     in (NewSettlement grId settlId, tail randomSeq)
                 else (NoEvent, tail randomSeq)
     where randomValue = head randomSeq
           randomValue' = randomValue `mod` 2
+          randomValue'' = head $ tail randomSeq
 
 executeEvent syncGame NoEvent = return ()
 
 executeEvent syncGame NewGroup = return ()
 
-executeEvent syncGame (NewSettlement groupId) = return ()
+executeEvent syncGame (NewSettlement groupId settlId) = return ()
 
 simLoop :: (TVar Game) -> (MVar ()) -> RandomIntSeq -> IO ()
 simLoop syncGame syncScreen randomInts = do

@@ -3,7 +3,7 @@
 module Civs.Model where
 
 import Civs.Pickle
-import Data.Map
+import qualified Data.Map.Strict as M
 import System.Random
 import Namegen
 
@@ -27,12 +27,35 @@ data Position = Pos { posx :: Int, posy :: Int }
                 deriving (Show, Eq)
 
 data Group = Group { groupId :: Id, groupName :: Name, groupPos :: Position, groupLanguage :: Language }
-             deriving Show
+
+instance Show Group where
+   show g = "Group {id="++(show $ groupId g) ++", name="++(show $ groupName g)++"}"
 
 type LanguageSamples = [[String]]
 
-data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group], gameLanguageSamples :: LanguageSamples }
-            deriving Show
+data Settlement = Settlement { settlId :: Int, settlOwner :: Int, settlPos :: Position, settlName :: Name }
+
+data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group], gameLanguageSamples :: LanguageSamples, gameSettlements :: M.Map Int Settlement }
+
+nextId :: Game -> (Int, Game)
+nextId game = (gameNextId game, game { gameNextId = 1 + gameNextId game})
+
+getGroup :: Game -> Int -> Group
+getGroup game id = helper (gameGroups game)
+                   where helper [] = error $ "Id not found " ++ (show id)
+                         helper (s:ss') = if (groupId s) == id then s else helper ss'
+
+addSettlement :: Game -> Int -> Int -> Position -> (Game, Int)
+addSettlement game seed owner pos = let (settlId, game') = nextId game
+                                        group = getGroup game' owner
+                                        language = groupLanguage group
+                                        name = generateName language seed
+                                        settlement = Settlement settlId owner pos (Name name)
+                                        game'' = game' { gameSettlements = M.insert settlId settlement (gameSettlements game') }
+                                     in (game'',settlId)
+
+instance Show Game where
+   show g = "Game {groups="++(show $ gameGroups g) ++"}"
 
 data Biome = Ocean
              | RockDesert
@@ -47,11 +70,11 @@ data Biome = Ocean
              | Savanna
              deriving (Show, Eq)
 
-getWorld :: World -> Map PickleElement PickleElement
+getWorld :: World -> M.Map PickleElement PickleElement
 getWorld (World (PickleSetState _ (PickleDict m))) = m
 
 getWorldEntry w k = let d = getWorld w
-                    in getMaybe (Data.Map.lookup (PickleString k) d)
+                    in getMaybe (M.lookup (PickleString k) d)
 
 getName w = toString $ getWorldEntry w "name"
 
@@ -100,7 +123,7 @@ getElevation w pos = let matrix = getWorldEntry w "elevation"
                          x = posx pos
                          y = posy pos
                          dat = Civs.Pickle.toDict matrix
-                         dat' = getMaybe $ Data.Map.lookup "data" dat :: PickleElement
+                         dat' = getMaybe $ M.lookup "data" dat :: PickleElement
                          dat'' = Civs.Pickle.toList dat'
                          row  = Civs.Pickle.toList $ dat'' !! y
                          cell = row !! x

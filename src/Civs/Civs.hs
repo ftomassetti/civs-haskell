@@ -1,11 +1,12 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+import Civs.Base
 import Civs.Model
 import Civs.Pickle
 import Civs.Simulation
 
-import Data.Map as M
+import Data.Map.Strict as M
 import qualified Data.ByteString.Lazy as S
 import System.Random
 import Civs.ConsoleExplorer
@@ -17,7 +18,7 @@ worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
 generateGame :: World -> LanguageSamples -> Game
-generateGame world languageSamples = Game 1 world [] languageSamples
+generateGame world languageSamples = Game 1 world [] languageSamples M.empty
 
 initialGame worldFileName languageSamples = do
     byteString <- S.readFile worldFileName :: IO S.ByteString
@@ -44,3 +45,5 @@ main = do syncScreen <- newMVar ()
           initScreen
           startSimulation syncGame syncScreen
           gameLoop syncGame e
+          finalG <- atomRead syncGame
+          putStrLn $ "Game: " ++ (show finalG)
