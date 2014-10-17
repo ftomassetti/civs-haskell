@@ -18,7 +18,7 @@ worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
 generateGame :: World -> LanguageSamples -> Game
-generateGame world languageSamples = Game 1 world [] languageSamples M.empty
+generateGame world languageSamples = Game 1 world M.empty languageSamples M.empty
 
 initialGame worldFileName languageSamples = do
     byteString <- S.readFile worldFileName :: IO S.ByteString

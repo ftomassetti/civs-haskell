@@ -3,6 +3,7 @@
 module Civs.Model where
 
 import Civs.Pickle
+import Data.Maybe
 import qualified Data.Map.Strict as M
 import System.Random
 import Namegen
@@ -14,7 +15,7 @@ import Namegen
 type Id = Int
 
 class WithId el where
-  getInGame :: Game -> Id -> el
+  getId :: el -> Id
 
 data Name = Name String | Unnamed
             deriving Show
@@ -180,7 +181,7 @@ data Settlement = Settlement { settlId :: Int, settlOwner :: Int, settlPos :: Po
 data Game = Game {
     gameNextId :: Int,
     gameWorld :: World,
-    gameGroups :: [Group],
+    gameGroups :: M.Map Id Group,
     gameLanguageSamples :: LanguageSamples,
     gameSettlements :: M.Map Int Settlement
 }
@@ -191,10 +192,8 @@ instance Show Game where
 nextId :: Game -> (Int, Game)
 nextId game = (gameNextId game, game { gameNextId = 1 + gameNextId game})
 
-getGroup :: Game -> Int -> Group
-getGroup game id = helper (gameGroups game)
-                   where helper [] = error $ "Id not found " ++ (show id)
-                         helper (s:ss') = if (groupId s) == id then s else helper ss'
+getGroup :: Game -> Id -> Group
+getGroup game id = fromJust $ M.lookup id (gameGroups game)
 
 addSettlement :: Game -> Int -> Int -> Position -> (Game, Int)
 addSettlement game seed owner pos = let (settlId, game') = nextId game
@@ -206,7 +205,7 @@ addSettlement game seed owner pos = let (settlId, game') = nextId game
                                      in (game'',settlId)
 
 generateGroup :: Game -> Int -> (Group, Game)
-generateGroup g seed = (ng, g' { gameGroups = ng : (gameGroups g)})
+generateGroup g seed = (ng, g' { gameGroups = M.insert (groupId ng) ng (gameGroups g)})
                        where pos = randomLandPos (gameWorld g) seed
                              allSamples = gameLanguageSamples g
                              samples = extractRandomSample allSamples seed

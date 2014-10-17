@@ -11,6 +11,8 @@ import Civs.ConsoleExplorer
 import Control.Concurrent
 import Control.Concurrent.STM
 
+import qualified Data.Map.Strict as M
+
 -- |Start all the separate threads for the simulation
 startSimulation syncGame syncScreen = do
     forkIO $ simulation syncGame syncScreen
@@ -24,13 +26,13 @@ groupBalancer syncGame syncScreen = do
         loop syncGame syncScreen ss
     where loop syncGame syncScreen ri = do  takeMVar syncScreen
                                             game <- atomRead syncGame
-                                            let groups = gameGroups game
-                                            if (length groups) < 5
+                                            let groupIds = M.keys $ gameGroups game
+                                            if (length groupIds) < 5
                                                 then do let (gr, game') = generateGroup game (head ri)
                                                         atomWrite syncGame game'
                                                         let Name sName = groupName gr
                                                         drawNews $ "Balancer: creating group "++ sName
-                                                else drawNews $ "Balancer: enough groups ("++(show $ length groups)++")"
+                                                else drawNews $ "Balancer: enough groups ("++(show $ length groupIds)++")"
                                             putMVar syncScreen ()
                                             threadDelay 4500000
                                             loop syncGame syncScreen (tail ri)
@@ -63,9 +65,9 @@ simEvent randomSeq syncGame = do
     game <- atomRead syncGame
     return $ case randomValue' of
         0 -> (NoEvent, tail randomSeq)
-        1 -> let groups = gameGroups game
-             in if length groups > 0
-                then let grId = groupId (head groups)
+        1 -> let groupIds = M.keys $ gameGroups game
+             in if length groupIds > 0
+                then let grId = head groupIds
                          (game',settlId) :: (Game,Int) = generateSettlement game grId randomValue''
                          _ = atomWrite syncGame game'
                      in (NewSettlement grId settlId, tail randomSeq)
