@@ -8,14 +8,10 @@ import System.Random
 import Namegen
 
 -------------------------------------------------
--- Model
+-- General
 -------------------------------------------------
 
 type Id = Int
-data World = World PickleElement
-
-instance Show World where
-  show w = "World " ++ getName w
 
 class WithId el where
   getInGame :: Game -> Id -> el
@@ -23,39 +19,53 @@ class WithId el where
 data Name = Name String | Unnamed
             deriving Show
 
-data Position = Pos { posx :: Int, posy :: Int } 
+data Position = Pos { posx :: Int, posy :: Int }
                 deriving (Show, Eq)
 
-data Group = Group { groupId :: Id, groupName :: Name, groupPos :: Position, groupLanguage :: Language }
+nextSeed :: Int -> Int
+nextSeed seed = head ss
+                where rg = mkStdGen seed
+                      ss = randoms rg :: [Int]
 
-instance Show Group where
-   show g = "Group {id="++(show $ groupId g) ++", name="++(show $ groupName g)++"}"
+takeRandom :: Int -> [a] -> Int -> [a]
+takeRandom seed [] n = error "List is empty"
+takeRandom seed list n = helper ss0 list n []
+                         where rg = mkStdGen seed
+                               ss0 = randoms rg :: [Int]
+                               helper :: [Int] -> [a] -> Int -> [a] -> [a]
+                               helper ss list 0 taken = taken
+                               helper ss list n taken = let index = (head ss) `mod` (length list)
+                                                            extracted = list !! index
+                                                        in helper (tail ss) list (n-1) (extracted:taken)
+
+-------------------------------------------------
+-- Language
+-------------------------------------------------
 
 type LanguageSamples = [[String]]
 
-data Settlement = Settlement { settlId :: Int, settlOwner :: Int, settlPos :: Position, settlName :: Name }
+generateLanguage :: [String] -> Int -> Language
+generateLanguage samples seed = fromSamples samples
 
-data Game = Game { gameNextId :: Int, gameWorld :: World, gameGroups :: [Group], gameLanguageSamples :: LanguageSamples, gameSettlements :: M.Map Int Settlement }
+extractRandomSample :: LanguageSamples -> Int -> [String]
+extractRandomSample allSamples seed = samplesFromA ++ samplesFromB
+                                      where rg = mkStdGen seed
+                                            ss0 = randoms rg :: [Int]
+                                            indexA = (ss0 !! 0) `mod` (length allSamples)
+                                            indexB = (ss0 !! 1) `mod` (length allSamples)
+                                            howManyFromA = (ss0 !! 2) `mod` 250
+                                            howManyFromB = 250 - howManyFromA
+                                            samplesFromA = takeRandom (ss0 !! 3) (allSamples !! indexA) howManyFromA
+                                            samplesFromB = takeRandom (ss0 !! 4) (allSamples !! indexB) howManyFromB
 
-nextId :: Game -> (Int, Game)
-nextId game = (gameNextId game, game { gameNextId = 1 + gameNextId game})
+-------------------------------------------------
+-- World
+-------------------------------------------------
 
-getGroup :: Game -> Int -> Group
-getGroup game id = helper (gameGroups game)
-                   where helper [] = error $ "Id not found " ++ (show id)
-                         helper (s:ss') = if (groupId s) == id then s else helper ss'
+data World = World PickleElement
 
-addSettlement :: Game -> Int -> Int -> Position -> (Game, Int)
-addSettlement game seed owner pos = let (settlId, game') = nextId game
-                                        group = getGroup game' owner
-                                        language = groupLanguage group
-                                        name = generateName language seed
-                                        settlement = Settlement settlId owner pos (Name name)
-                                        game'' = game' { gameSettlements = M.insert settlId settlement (gameSettlements game') }
-                                     in (game'',settlId)
-
-instance Show Game where
-   show g = "Game {groups="++(show $ gameGroups g) ++"}"
+instance Show World where
+  show w = "World " ++ getName w
 
 data Biome = Ocean
              | RockDesert
@@ -127,21 +137,16 @@ getElevation w pos = let matrix = getWorldEntry w "elevation"
                          dat'' = Civs.Pickle.toList dat'
                          row  = Civs.Pickle.toList $ dat'' !! y
                          cell = row !! x
-                         cell' = toDouble cell                          
+                         cell' = toDouble cell
                      in cell'
 
 move :: World -> Position -> Int -> Int -> Maybe Position
-move world pos dx dy = let Pos x y = pos                           
+move world pos dx dy = let Pos x y = pos
                            w = getWidth world
                            h = getHeight world
                            nx = x+dx
                            ny = y+dy
                        in if (nx>0) && (ny>0) && (nx<w) && (ny<h) then Just (Pos nx ny) else Nothing
-
-nextSeed :: Int -> Int
-nextSeed seed = head ss
-                where rg = mkStdGen seed
-                      ss = randoms rg :: [Int]
 
 randomPos world seed = Pos x y
                        where rg = mkStdGen seed
@@ -152,30 +157,53 @@ randomPos world seed = Pos x y
 randomLandPos world seed = if isLand world pos then pos else randomPos world (nextSeed seed)
                            where pos = randomPos world seed
 
-generateLanguage :: [String] -> Int -> Language
-generateLanguage samples seed = fromSamples samples
 
-takeRandom :: Int -> [a] -> Int -> [a]
-takeRandom seed [] n = error "List is empty"
-takeRandom seed list n = helper ss0 list n []
-                         where rg = mkStdGen seed
-                               ss0 = randoms rg :: [Int]
-                               helper :: [Int] -> [a] -> Int -> [a] -> [a]
-                               helper ss list 0 taken = taken
-                               helper ss list n taken = let index = (head ss) `mod` (length list)
-                                                            extracted = list !! index
-                                                        in helper (tail ss) list (n-1) (extracted:taken)
+-------------------------------------------------
+-- Group
+-------------------------------------------------
 
-extractRandomSample :: LanguageSamples -> Int -> [String]
-extractRandomSample allSamples seed = samplesFromA ++ samplesFromB
-                                      where rg = mkStdGen seed
-                                            ss0 = randoms rg :: [Int]
-                                            indexA = (ss0 !! 0) `mod` (length allSamples)
-                                            indexB = (ss0 !! 1) `mod` (length allSamples)
-                                            howManyFromA = (ss0 !! 2) `mod` 250
-                                            howManyFromB = 250 - howManyFromA
-                                            samplesFromA = takeRandom (ss0 !! 3) (allSamples !! indexA) howManyFromA
-                                            samplesFromB = takeRandom (ss0 !! 4) (allSamples !! indexB) howManyFromB
+data Group = Group { groupId :: Id, groupName :: Name, groupPos :: Position, groupLanguage :: Language }
+
+instance Show Group where
+   show g = "Group {id="++(show $ groupId g) ++", name="++(show $ groupName g)++"}"
+
+-------------------------------------------------
+-- Settlement
+-------------------------------------------------
+
+data Settlement = Settlement { settlId :: Int, settlOwner :: Int, settlPos :: Position, settlName :: Name }
+
+-------------------------------------------------
+-- Game
+-------------------------------------------------
+
+data Game = Game {
+    gameNextId :: Int,
+    gameWorld :: World,
+    gameGroups :: [Group],
+    gameLanguageSamples :: LanguageSamples,
+    gameSettlements :: M.Map Int Settlement
+}
+
+instance Show Game where
+   show g = "Game {groups="++(show $ gameGroups g) ++"}"
+
+nextId :: Game -> (Int, Game)
+nextId game = (gameNextId game, game { gameNextId = 1 + gameNextId game})
+
+getGroup :: Game -> Int -> Group
+getGroup game id = helper (gameGroups game)
+                   where helper [] = error $ "Id not found " ++ (show id)
+                         helper (s:ss') = if (groupId s) == id then s else helper ss'
+
+addSettlement :: Game -> Int -> Int -> Position -> (Game, Int)
+addSettlement game seed owner pos = let (settlId, game') = nextId game
+                                        group = getGroup game' owner
+                                        language = groupLanguage group
+                                        name = generateName language seed
+                                        settlement = Settlement settlId owner pos (Name name)
+                                        game'' = game' { gameSettlements = M.insert settlId settlement (gameSettlements game') }
+                                     in (game'',settlId)
 
 generateGroup :: Game -> Int -> (Group, Game)
 generateGroup g seed = (ng, g' { gameGroups = ng : (gameGroups g)})
