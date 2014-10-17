@@ -27,3 +27,12 @@ executable civs
                      terminal-size,
                      stm
   hs-source-dirs:  src
+
+Test-Suite unit-tests
+    type:          exitcode-stdio-1.0
+    main-is:       Civs/MainTest.hs
+    hs-source-dirs:  .
+                     ,test
+    build-depends: base
+                 , Cabal
+                 ,  HTF == 0.12.*
