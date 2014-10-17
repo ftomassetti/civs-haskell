@@ -18,7 +18,7 @@ class WithId el where
   getId :: el -> Id
 
 data Name = Name String | Unnamed
-            deriving Show
+            deriving (Show, Eq)
 
 data Position = Pos { posx :: Int, posy :: Int }
                 deriving (Show, Eq)
@@ -173,7 +173,7 @@ instance Show Group where
 -------------------------------------------------
 
 data Settlement = Settlement { settlId :: Int, settlOwner :: Int, settlPos :: Position, settlName :: Name }
-
+     deriving Eq
 -------------------------------------------------
 -- Game
 -------------------------------------------------
@@ -194,6 +194,9 @@ nextId game = (gameNextId game, game { gameNextId = 1 + gameNextId game})
 
 getGroup :: Game -> Id -> Group
 getGroup game id = fromJust $ M.lookup id (gameGroups game)
+
+getSettlement :: Game -> Id -> Settlement
+getSettlement game id = fromJust $ M.lookup id (gameSettlements game)
 
 addSettlement :: Game -> Int -> Int -> Position -> (Game, Int)
 addSettlement game seed owner pos = let (settlId, game') = nextId game

@@ -47,7 +47,7 @@ type RandomIntSeq = [Int]
 
 data Event = NoEvent
              | NewGroup
-             | NewSettlement Int Int
+             | NewSettlement Int Settlement
              deriving Eq
 
 generateSettlement :: Game -> Int -> Int -> (Game, Int)
@@ -58,7 +58,8 @@ generateSettlement game grId seed = addSettlement game seed grId pos
 instance Show Event where
     show NoEvent = "<nothing>"
     show NewGroup = "Creating new group"
-    show (NewSettlement grId settId) = "Creating new settlement for group " ++ (show grId)
+    show (NewSettlement grId sett) = let pos = settlPos sett
+                                     in "Creating new settlement for group " ++ (show grId) ++ " at " ++ (show pos)
 
 simEvent :: RandomIntSeq -> (TVar Game) -> IO (Event, RandomIntSeq)
 simEvent randomSeq syncGame = do
@@ -70,7 +71,8 @@ simEvent randomSeq syncGame = do
                 then let grId = head groupIds
                          (game',settlId) :: (Game,Int) = generateSettlement game grId randomValue''
                          _ = atomWrite syncGame game'
-                     in (NewSettlement grId settlId, tail randomSeq)
+                         settl = getSettlement game' settlId
+                     in (NewSettlement grId settl, tail randomSeq)
                 else (NoEvent, tail randomSeq)
     where randomValue = head randomSeq
           randomValue' = randomValue `mod` 2
@@ -80,7 +82,7 @@ executeEvent syncGame NoEvent = return ()
 
 executeEvent syncGame NewGroup = return ()
 
-executeEvent syncGame (NewSettlement groupId settlId) = return ()
+executeEvent syncGame (NewSettlement groupId settl) = return ()
 
 simLoop :: (TVar Game) -> (MVar ()) -> RandomIntSeq -> IO ()
 simLoop syncGame syncScreen randomInts = do
