@@ -23,6 +23,7 @@ data Input = Up
 data Cell = CellBiome Biome
             | CellPlayer
             | EmptyCell
+            | CellVillage
             deriving (Eq)
 
 -- All the info represented on the screen
@@ -118,6 +119,11 @@ drawBiome _ = do  setSGR [ SetConsoleIntensity BoldIntensity
                           , SetColor Foreground Dull Red ]
                   putStr "?"
 
+drawCell (CellBiome biome) = drawBiome biome
+drawCell CellVillage = do setSGR [ SetConsoleIntensity BoldIntensity
+                              , SetColor Foreground Vivid Red ]
+                          putStr "#"
+
 drawCells :: Game -> UI -> [(Int,Int)] -> IO UI
 drawCells game explorer [] = return explorer
 drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
@@ -125,10 +131,13 @@ drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
                                               let screen = explorerScreen explorer
                                               let w = gameWorld game
                                               let (Pos baseX baseY) = heroPosOnScreen (Pos heroX heroY) explorer
-                                              let biome = getBiome w (Pos (x+heroX-baseX) (y+heroY-baseY))
+                                              let pos = (Pos (x+heroX-baseX) (y+heroY-baseY))
+                                              let biome = getBiome w pos
+                                              let hasVillage = containVillage game pos
+                                              let toDraw = if hasVillage then CellVillage else CellBiome biome
                                               let currCellOnScreen = getScreenCell screen (ScreenPos y x)
-                                              explorer' <- if currCellOnScreen /= CellBiome biome
-                                                           then do drawBiome biome
+                                              explorer' <- if currCellOnScreen /= toDraw
+                                                           then do drawCell toDraw
                                                                    let screen' = setScreenCell screen (ScreenPos y x) (CellBiome biome)
                                                                    return explorer { explorerScreen = screen' }
                                                            else return explorer
