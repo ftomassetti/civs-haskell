@@ -234,17 +234,16 @@ addSettlement game seed owner pos = let (settlId, game') = nextId game
                                         group = getGroup game' owner
                                         language = groupLanguage group
                                         name = generateName language seed
-                                        settlement = Settlement owner (Name name) pos settlId 
+                                        settlement = Settlement owner (Name name) pos settlId
                                         game'' = game' { gameSettlements = M.insert settlId settlement (gameSettlements game') }
                                      in (game'',settlId)
 
 insertGroup :: Game -> (Id -> Group) -> (Game, Group)
-insertGroup game grNoId = let grId = (gameNextId game)
+insertGroup game grNoId = let (grId, game') = nextId game
                               gr = grNoId grId
-                              game' = game { gameNextId = grId + 1}
                               gg = gameGroups game'
                               gg' = M.insert grId gr gg
-                              game'' = game { gameGroups = gg' }
+                              game'' = game' { gameGroups = gg' }
                           in (game'', gr)
 
 insertSettlement :: Game -> (Id -> Settlement) -> (Game, Settlement)
@@ -253,7 +252,7 @@ insertSettlement game settlNoId = let settlId = (gameNextId game)
                                       game' = game { gameNextId = settlId + 1}
                                       gs = gameSettlements game'
                                       gs' = M.insert settlId settl gs
-                                      game'' = game { gameSettlements = gs' }
+                                      game'' = game' { gameSettlements = gs' }
                                   in (game'', settl)
 
 generateGroup :: Game -> Int -> (Game, Group)
