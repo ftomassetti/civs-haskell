@@ -10,10 +10,6 @@ import System.Random
 import Namegen
 import Data.Map.Strict as M
 import qualified Data.ByteString.Lazy as S
-import System.Random
-import Control.Concurrent
-import Control.Concurrent.STM
-import Namegen
 
 -------------------------------------------------
 -- General
@@ -180,7 +176,12 @@ randomLandPos world seed = if isLand world pos then pos else randomPos world (ne
 -- Group
 -------------------------------------------------
 
-data Group = Group { groupId :: Id, groupName :: Name, groupPos :: Position, groupLanguage :: Language }
+data Group = Group {
+    groupName :: Name,
+    groupPos :: Position,
+    groupLanguage :: Language,
+    groupId :: Id
+}
 
 instance Show Group where
    show g = "Group {id="++(show $ groupId g) ++", name="++(show $ groupName g)++"}"
@@ -226,6 +227,15 @@ addSettlement game seed owner pos = let (settlId, game') = nextId game
                                         game'' = game' { gameSettlements = M.insert settlId settlement (gameSettlements game') }
                                      in (game'',settlId)
 
+insertGroup :: Game -> (Id -> Group) -> Game
+insertGroup game grNoId = let grId = (gameNextId game)
+                              gr = grNoId grId
+                              game'  = game { gameNextId = grId + 1}
+                              gg = gameGroups game'
+                              gg' = M.insert grId gr gg
+                              game'' = game { gameGroups = gg' }
+                          in game''
+
 generateGroup :: Game -> Int -> (Group, Game)
 generateGroup g seed = (ng, g' { gameGroups = M.insert (groupId ng) ng (gameGroups g)})
                        where pos = randomLandPos (gameWorld g) seed
@@ -233,7 +243,7 @@ generateGroup g seed = (ng, g' { gameGroups = M.insert (groupId ng) ng (gameGrou
                              samples = extractRandomSample allSamples seed
                              language = generateLanguage samples seed
                              name = generateName language seed
-                             ng = Group (gameNextId g) (Name name) pos language
+                             ng = Group (Name name) pos language (gameNextId g)
                              g' = g { gameNextId = 1 + gameNextId g}
 
 containVillage :: Game -> Position -> Bool
