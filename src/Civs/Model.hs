@@ -190,8 +190,12 @@ instance Show Group where
 -- Settlement
 -------------------------------------------------
 
-data Settlement = Settlement { settlId :: Int, settlOwner :: Int, settlPos :: Position, settlName :: Name }
-     deriving Eq
+data Settlement = Settlement {
+    settlOwner :: Id,
+    settlName :: Name,
+    settlPos :: Position,
+    settlId :: Int
+} deriving Eq
 -------------------------------------------------
 -- Game
 -------------------------------------------------
@@ -215,6 +219,8 @@ getGroup game id = fromJust $ M.lookup id (gameGroups game)
 
 numberOfGroups = M.size . gameGroups
 
+numberOfSettlements = M.size . gameSettlements
+
 getSettlement :: Game -> Id -> Settlement
 getSettlement game id = fromJust $ M.lookup id (gameSettlements game)
 
@@ -223,7 +229,7 @@ addSettlement game seed owner pos = let (settlId, game') = nextId game
                                         group = getGroup game' owner
                                         language = groupLanguage group
                                         name = generateName language seed
-                                        settlement = Settlement settlId owner pos (Name name)
+                                        settlement = Settlement owner (Name name) pos settlId 
                                         game'' = game' { gameSettlements = M.insert settlId settlement (gameSettlements game') }
                                      in (game'',settlId)
 
@@ -235,6 +241,15 @@ insertGroup game grNoId = let grId = (gameNextId game)
                               gg' = M.insert grId gr gg
                               game'' = game { gameGroups = gg' }
                           in (game'', gr)
+
+insertSettlement :: Game -> (Id -> Settlement) -> (Game, Settlement)
+insertSettlement game settlNoId = let settlId = (gameNextId game)
+                                      settl = settlNoId settlId
+                                      game' = game { gameNextId = settlId + 1}
+                                      gs = gameSettlements game'
+                                      gs' = M.insert settlId settl gs
+                                      game'' = game { gameSettlements = gs' }
+                                  in (game'', settl)
 
 generateGroup :: Game -> Int -> (Game, Group)
 generateGroup g seed = insertGroup g ng

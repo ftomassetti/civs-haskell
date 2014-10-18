@@ -24,3 +24,13 @@ test_numberOfGroupsNonEmpty = do
     l <- genLang 123
     let (g',_) = insertGroup g (Group (Name "aName") (Pos 123 123) l)
     assertEqual 1 (numberOfGroups g')
+
+test_numberOfSettlementsEmpty = do
+    g <- game0
+    assertEqual 0 (numberOfSettlements g)
+
+test_numberOfSettlementsNonEmpty = do
+    g <- game0
+    let (g',_) = insertSettlement g (Settlement 123 (Name "aName") (Pos 123 123))
+    assertEqual 1 (numberOfSettlements g')
+
