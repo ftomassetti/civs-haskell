@@ -28,8 +28,7 @@ groupBalancer syncGame syncScreen = do
                                             game <- atomRead syncGame
                                             let groupIds = M.keys $ gameGroups game
                                             if (length groupIds) < 5
-                                                then do let (game', gr) = generateGroup game (head ri)
-                                                        atomWrite syncGame game'
+                                                then do (game', gr) <- atomUpdateT syncGame (generateGroup (head ri))
                                                         let Name sName = groupName gr
                                                         drawNews $ "Balancer: creating group "++ sName
                                                 else drawNews $ "Balancer: enough groups ("++(show $ length groupIds)++")"
@@ -50,8 +49,8 @@ data Event = NoEvent
              | NewSettlement Int Settlement
              deriving Eq
 
-generateSettlement :: Game -> Int -> Int -> (Game, Int)
-generateSettlement game grId seed = addSettlement game seed grId pos
+generateSettlement :: Int -> Int -> Game -> (Game, Int)
+generateSettlement grId seed game = addSettlement game seed grId pos
                                     where world = gameWorld game
                                           pos = randomLandPos world seed
 
@@ -64,16 +63,17 @@ instance Show Event where
 simEvent :: RandomIntSeq -> (TVar Game) -> IO (Event, RandomIntSeq)
 simEvent randomSeq syncGame = do
     game <- atomRead syncGame
-    return $ case randomValue' of
-        0 -> (NoEvent, tail randomSeq)
+    case randomValue' of
+        0 -> return (NoEvent, tail randomSeq)
         1 -> let groupIds = M.keys $ gameGroups game
              in if length groupIds > 0
                 then let grId = head groupIds
-                         (game',settlId) :: (Game,Int) = generateSettlement game grId randomValue''
-                         _ = do atomWrite syncGame game'
-                         settl = getSettlement game' settlId
-                     in (NewSettlement grId settl, tail randomSeq)
-                else (NoEvent, tail randomSeq)
+                     in do let f :: Game -> (Game, Id) = generateSettlement grId randomValue''
+                           (game',settlId) :: (Game, Id) <- atomUpdateT syncGame f
+                           let settl = getSettlement game' settlId
+                           let e :: Event = NewSettlement grId settl
+                           return (e, tail randomSeq)
+                else return (NoEvent, tail randomSeq)
     where randomValue = head randomSeq
           randomValue' = randomValue `mod` 2
           randomValue'' = head $ tail randomSeq

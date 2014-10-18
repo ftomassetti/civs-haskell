@@ -255,8 +255,8 @@ insertSettlement game settlNoId = let settlId = (gameNextId game)
                                       game'' = game' { gameSettlements = gs' }
                                   in (game'', settl)
 
-generateGroup :: Game -> Int -> (Game, Group)
-generateGroup g seed = insertGroup g ng
+generateGroup :: Int -> Game -> (Game, Group)
+generateGroup seed g = insertGroup g ng
                        where pos = randomLandPos (gameWorld g) seed
                              allSamples = gameLanguageSamples g
                              language = generateLanguage g seed
