@@ -199,7 +199,7 @@ data Settlement = Settlement {
     settlName :: Name,
     settlPos :: Position,
     settlId :: Int
-} deriving Eq
+} deriving (Eq, Show)
 -------------------------------------------------
 -- Game
 -------------------------------------------------
@@ -213,7 +213,7 @@ data Game = Game {
 }
 
 instance Show Game where
-   show g = "Game {groups="++(show $ gameGroups g) ++"}"
+   show g = "Game {groups="++(show $ gameGroups g) ++ " settlements="++(show $ gameSettlements g) ++"}"
 
 nextId :: Game -> (Id, Game)
 nextId game = (id, game { gameNextId = id + 1})
