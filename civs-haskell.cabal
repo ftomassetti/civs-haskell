@@ -31,8 +31,15 @@ executable civs
 Test-Suite unit-tests
     type:          exitcode-stdio-1.0
     main-is:       Civs/MainTest.hs
-    hs-source-dirs:  .
+    hs-source-dirs:  src
                      ,test
     build-depends: base
                  , Cabal
-                 ,  HTF == 0.12.*
+                 , HTF == 0.12.*
+                 , namegen-haskell >= 0.1
+                 , random >= 1.0
+                 , containers == 0.5.*
+                 , data-binary-ieee754 == 0.4.*
+                 , bytestring == 0.10.*
+                 , binary == 0.5.*
+                 , stm

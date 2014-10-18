@@ -3,15 +3,12 @@
 module Civs.ModelTest where
 
 import Test.Framework
+import Civs.Model
 
-myReverse = reverse
+game0 :: IO Game
+game0 = do samples <- loadAllSamples
+           initialGame "worlds/seed_77.world" samples
 
-test_nonEmpty = do assertEqual [1,2] (myReverse [1])
-                   assertEqual [3,2,1] (myReverse [1,2,3])
+test_numberOfGroupsEmpty = do g <- game0
+                              assertEqual 0 (numberOfGroups g)
 
-test_empty = assertEqual ([] :: [Int]) (myReverse [])
-
-prop_reverse :: [Int] -> Bool
-prop_reverse xs = xs == (myReverse (myReverse xs))
-
--- main = htfMain htf_thisModulesTests

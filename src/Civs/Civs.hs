@@ -17,25 +17,6 @@ import Namegen
 worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
-generateGame :: World -> LanguageSamples -> Game
-generateGame world languageSamples = Game 1 world M.empty languageSamples M.empty
-
-initialGame worldFileName languageSamples = do
-    byteString <- S.readFile worldFileName :: IO S.ByteString
-    world' <- process (PickleStatus [] empty) byteString
-    let world = World world'
-    return $ generateGame world languageSamples
-
-loadAllSamples :: IO LanguageSamples
-loadAllSamples = helper ["languages/citynames_ch.txt", "languages/citynames_eg.txt",
-                                        "languages/citynames_fr.txt", "languages/citynames_jp.txt",
-                                        "languages/citynames_de.txt", "languages/citynames_es.txt",
-                                        "languages/citynames_it.txt", "languages/citynames_pl.txt"] []
-                 where helper :: [String] -> [[String]] -> IO [[String]]
-                       helper [] loaded = return loaded
-                       helper fileNames loaded = do newlyLoaded :: [String] <- loadSamples (head fileNames)
-                                                    helper (tail fileNames) (newlyLoaded:loaded)
-
 main :: IO ()
 main = do syncScreen <- newMVar ()
           namesSamples <- loadAllSamples
