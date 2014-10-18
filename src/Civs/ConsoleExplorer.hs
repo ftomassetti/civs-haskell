@@ -155,17 +155,19 @@ handleExit = do
   showCursor
   putStrLn "Thank you for playing!"
 
+getInputChar char = case char of
+                        'q' -> return Exit
+                        'w' -> return Up
+                        's' -> return Down
+                        'a' -> return Civs.ConsoleExplorer.Left
+                        'd' -> return Civs.ConsoleExplorer.Right
+                        _ -> getInput
+
 -- receive a character and return our Input data structure,
 -- recursing on invalid input
 getInput = do
   char <- getChar
-  case char of
-    'q' -> return Exit
-    'w' -> return Up
-    's' -> return Down
-    'a' -> return Civs.ConsoleExplorer.Left
-    'd' -> return Civs.ConsoleExplorer.Right
-    _ -> getInput
+  getInputChar char
 
 newCoord input heroX heroY world = case input of
     Up    -> Pos heroX (max (heroY - 1) 0)
