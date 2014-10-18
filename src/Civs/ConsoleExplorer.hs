@@ -9,6 +9,7 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import qualified Data.Sequence as S
 import qualified System.Console.Terminal.Size as TS
+import Civs.UI.Screen
 
 data Input = Up
            | Down
@@ -16,15 +17,6 @@ data Input = Up
            | Right
            | Exit
            deriving (Eq)
-
-data Cell = CellBiome Biome
-            | CellPlayer
-            | EmptyCell
-            | CellVillage
-            deriving (Eq)
-
--- All the info represented on the screen
-type Screen = S.Seq (S.Seq Cell)
 
 data UI = UI { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
 
@@ -59,17 +51,6 @@ gameLoop syncGame explorer = do
   case input of
     Exit -> handleExit
     _    -> handleDir syncGame explorer'' input
-
-data ScreenPos = ScreenPos { spRow :: Int, spCol :: Int}
-
-setScreenCell screen screenPos cell = S.update r row' screen
-                                      where ScreenPos r c = screenPos
-                                            row = S.index screen r
-                                            row' = S.update c cell row
-
-getScreenCell screen screenPos = S.index row c
-                                 where ScreenPos r c = screenPos
-                                       row = S.index screen r
 
 drawBiome :: Biome -> IO ()
 drawBiome Ocean =       do  setSGR [ SetConsoleIntensity BoldIntensity
@@ -215,13 +196,6 @@ initScreen = do
     hideCursor
     setTitle "Civs"
     clearScreen
-
-screenWidth = 80
-screenHeight = 30
-
-initialScreen :: Screen
-initialScreen = S.replicate screenHeight row
-                where row = S.replicate screenWidth EmptyCell
 
 initialExplorer :: MVar () -> UI
 initialExplorer syncScreen = UI pos initialScreen syncScreen
