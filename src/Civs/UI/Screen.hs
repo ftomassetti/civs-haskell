@@ -9,14 +9,26 @@ data Cell = CellBiome Biome
             | CellVillage
             deriving (Eq)
 
--- | All the info represented on the screen
-data Screen = Screen { screenCells :: S.Seq (S.Seq Cell), screenTooSmall :: Bool }
+type ScreenNews = [String]
 
-screenWidth = 80
+type ScreenInfo = [String]
+
+-- | All the info represented on the screen.
+-- | The screen is divided in three ares:
+-- | Map (made of Cells)
+-- | News
+-- | Info
+data Screen = Screen {
+    screenCells :: S.Seq (S.Seq Cell),
+    screenNews :: ScreenNews,
+    screenInfo :: ScreenInfo
+}
+
+screenWidth  = 80
 screenHeight = 30
 
 initialScreen :: Screen
-initialScreen = Screen cells False
+initialScreen = Screen cells [] []
                 where row = S.replicate screenWidth EmptyCell
                       cells = S.replicate screenHeight row
 
