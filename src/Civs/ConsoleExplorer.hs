@@ -9,9 +9,6 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import qualified Data.Sequence as S
 import qualified System.Console.Terminal.Size as TS
-import Control.Monad
-import Control.Concurrent
-import Control.Concurrent.STM
 
 data Input = Up
            | Down

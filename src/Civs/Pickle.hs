@@ -1,15 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Civs.Pickle where
-import Data.List
+
 import Data.Word
 import Data.Map
-import Data.Char
-import Data.Maybe
 import Data.Binary.Get
 import Data.Typeable
 import qualified Data.ByteString.Lazy as S
-import qualified Data.ByteString.Internal as BS (c2w, w2c)
+import qualified Data.ByteString.Internal as BS (w2c)
 import Data.Binary.IEEE754
 
 data PickleElement = PickleClass { moduleName :: String, className :: String } 
