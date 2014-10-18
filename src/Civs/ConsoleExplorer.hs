@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Civs.ConsoleExplorer where
 
 import System.Console.ANSI
@@ -10,12 +12,14 @@ import Control.Concurrent.STM
 import qualified Data.Sequence as S
 import qualified System.Console.Terminal.Size as TS
 import Civs.UI.Screen
+import UI.NCurses
 
 data Input = Up
            | Down
            | Left
            | Right
            | Exit
+           | NoInput
            deriving (Eq)
 
 data UI = UI { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
@@ -47,7 +51,7 @@ gameLoop syncGame explorer = do
   explorer'' <- drawHero  hero explorer'
   drawStatus hero game explorer''
   putMVar syncScreen ()
-  input <- getInput
+  input :: Input <- getInput
   case input of
     Exit -> handleExit
     _    -> handleDir syncGame explorer'' input
