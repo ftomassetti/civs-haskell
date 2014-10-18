@@ -28,7 +28,7 @@ groupBalancer syncGame syncScreen = do
                                             game <- atomRead syncGame
                                             let groupIds = M.keys $ gameGroups game
                                             if (length groupIds) < 5
-                                                then do let (gr, game') = generateGroup game (head ri)
+                                                then do let (game', gr) = generateGroup game (head ri)
                                                         atomWrite syncGame game'
                                                         let Name sName = groupName gr
                                                         drawNews $ "Balancer: creating group "++ sName

@@ -227,24 +227,23 @@ addSettlement game seed owner pos = let (settlId, game') = nextId game
                                         game'' = game' { gameSettlements = M.insert settlId settlement (gameSettlements game') }
                                      in (game'',settlId)
 
-insertGroup :: Game -> (Id -> Group) -> Game
+insertGroup :: Game -> (Id -> Group) -> (Game, Group)
 insertGroup game grNoId = let grId = (gameNextId game)
                               gr = grNoId grId
-                              game'  = game { gameNextId = grId + 1}
+                              game' = game { gameNextId = grId + 1}
                               gg = gameGroups game'
                               gg' = M.insert grId gr gg
                               game'' = game { gameGroups = gg' }
-                          in game''
+                          in (game'', gr)
 
-generateGroup :: Game -> Int -> (Group, Game)
-generateGroup g seed = (ng, g' { gameGroups = M.insert (groupId ng) ng (gameGroups g)})
+generateGroup :: Game -> Int -> (Game, Group)
+generateGroup g seed = insertGroup g ng
                        where pos = randomLandPos (gameWorld g) seed
                              allSamples = gameLanguageSamples g
                              samples = extractRandomSample allSamples seed
                              language = generateLanguage samples seed
                              name = generateName language seed
-                             ng = Group (Name name) pos language (gameNextId g)
-                             g' = g { gameNextId = 1 + gameNextId g}
+                             ng = Group (Name name) pos language
 
 containVillage :: Game -> Position -> Bool
 containVillage game pos = helper $ M.elems (gameSettlements game)

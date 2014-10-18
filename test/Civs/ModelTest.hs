@@ -22,5 +22,5 @@ test_numberOfGroupsEmpty = do
 test_numberOfGroupsNonEmpty = do
     g <- game0
     l <- genLang 123
-    let g' = insertGroup g (Group (Name "aName") (Pos 123 123) l)
+    let (g',_) = insertGroup g (Group (Name "aName") (Pos 123 123) l)
     assertEqual 1 (numberOfGroups g')
