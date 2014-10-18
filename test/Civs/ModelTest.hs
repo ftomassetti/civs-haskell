@@ -32,6 +32,17 @@ test_numberOfGroupsNonEmpty = do
     let (g',_) = insertGroup g (Group (Name "aName") (Pos 123 123) l)
     assertEqual 1 (numberOfGroups g')
 
+test_insertGroupMultipleCalls = do
+    g <- game0
+    l <- genLang 123
+    let (g',_)   = insertGroup g   (Group (Name "aName") (Pos 123 123) l)
+    let (g'',_)  = insertGroup g'  (Group (Name "aName") (Pos 123 123) l)
+    let (g''',_) = insertGroup g'' (Group (Name "aName") (Pos 123 123) l)
+    assertEqual 0 (numberOfGroups g)
+    assertEqual 1 (numberOfGroups g')
+    assertEqual 2 (numberOfGroups g'')
+    assertEqual 3 (numberOfGroups g''')
+
 test_numberOfSettlementsEmpty = do
     g <- game0
     assertEqual 0 (numberOfSettlements g)
