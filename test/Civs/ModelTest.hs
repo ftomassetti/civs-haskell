@@ -13,7 +13,7 @@ game0 = do samples <- loadAllSamples
 genLang :: Int -> IO Language
 genLang seed = do allSamples <- loadAllSamples
                   let sample = extractRandomSample allSamples seed
-                  return $ generateLanguage sample seed
+                  return $ generateLanguageFromSamples sample seed
 
 test_nextId = do
     g <- game0

@@ -48,8 +48,8 @@ takeRandom seed list n = helper ss0 list n []
 
 type LanguageSamples = [[String]]
 
-generateLanguage :: [String] -> Int -> Language
-generateLanguage samples seed = fromSamples samples
+generateLanguageFromSamples :: [String] -> Int -> Language
+generateLanguageFromSamples samples seed = fromSamples samples
 
 extractRandomSample :: LanguageSamples -> Int -> [String]
 extractRandomSample allSamples seed = samplesFromA ++ samplesFromB
@@ -61,6 +61,10 @@ extractRandomSample allSamples seed = samplesFromA ++ samplesFromB
                                             howManyFromB = 250 - howManyFromA
                                             samplesFromA = takeRandom (ss0 !! 3) (allSamples !! indexA) howManyFromA
                                             samplesFromB = takeRandom (ss0 !! 4) (allSamples !! indexB) howManyFromB
+
+generateLanguage :: Game -> Int -> Language
+generateLanguage game seed = generateLanguageFromSamples sample seed
+                             where sample = extractRandomSample (gameLanguageSamples game) seed
 
 loadAllSamples :: IO LanguageSamples
 loadAllSamples = helper ["languages/citynames_ch.txt", "languages/citynames_eg.txt",
@@ -256,8 +260,7 @@ generateGroup :: Game -> Int -> (Game, Group)
 generateGroup g seed = insertGroup g ng
                        where pos = randomLandPos (gameWorld g) seed
                              allSamples = gameLanguageSamples g
-                             samples = extractRandomSample allSamples seed
-                             language = generateLanguage samples seed
+                             language = generateLanguage g seed
                              name = generateName language seed
                              ng = Group (Name name) pos language
 
