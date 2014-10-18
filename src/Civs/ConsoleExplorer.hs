@@ -33,8 +33,12 @@ drawStatus (Pos heroX heroY) game explorer = do
   setSGR [ SetConsoleIntensity BoldIntensity
        , SetColor Foreground Vivid Blue ]
   let w = gameWorld game
-  let biome = getBiome w (Pos heroX heroY)
-  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++(show biome)++ "       "
+  let pos = Pos heroX heroY
+  let biome = getBiome w pos
+  let posMsg = case getSettlementAt game pos of
+                    Nothing -> (show biome)
+                    Just s -> "in " ++ (show $ settlName s)
+  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++ posMsg ++ "       "
 
 drawNews msg = do setCursorPosition (screenHeight+1) 0
                   setSGR [ SetConsoleIntensity BoldIntensity

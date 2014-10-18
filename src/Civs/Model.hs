@@ -21,7 +21,11 @@ class WithId el where
   getId :: el -> Id
 
 data Name = Name String | Unnamed
-            deriving (Show, Eq)
+            deriving Eq
+
+instance Show Name where
+  show (Name n) = n
+  show Unnamed  = "<unnamed>"
 
 data Position = Pos { posx :: Int, posy :: Int }
                 deriving (Show, Eq)
@@ -228,6 +232,11 @@ numberOfSettlements = M.size . gameSettlements
 
 getSettlement :: Game -> Id -> Settlement
 getSettlement game id = fromJust $ M.lookup id (gameSettlements game)
+
+getSettlementAt :: Game -> Position -> Maybe Settlement
+getSettlementAt game pos = helper (M.elems (gameSettlements game))
+                           where helper [] = Nothing
+                                 helper (s:ss) = if settlPos s==pos then Just s else helper ss
 
 addSettlement :: Game -> Int -> Int -> Position -> (Game, Int)
 addSettlement game seed owner pos = let (settlId, game') = nextId game
