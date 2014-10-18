@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
 
 module Civs.ConsoleExplorer where
 
@@ -25,7 +26,7 @@ data Input = Up
 data UI = UI { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
 
 drawStatus (Pos heroX heroY) game explorer = do
-  setCursorPosition screenHeight 0
+  setCursorPosition (screenHeight+2) 0
   setSGR [ SetConsoleIntensity BoldIntensity
        , SetColor Foreground Vivid Blue ]
   let w = gameWorld game
@@ -36,7 +37,7 @@ drawStatus (Pos heroX heroY) game explorer = do
                     Just s -> "in " ++ (show $ settlName s)
   putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++ posMsg ++ "       "
 
-drawNews msg = do setCursorPosition (screenHeight+1) 0
+drawNews msg = do setCursorPosition (screenHeight+3) 0
                   setSGR [ SetConsoleIntensity BoldIntensity
                          , SetColor Foreground Vivid Black ]
                   putStr $ "News: " ++ msg ++ "                                        "
@@ -55,6 +56,32 @@ gameLoop syncGame explorer = do
   case input of
     Exit -> handleExit
     _    -> handleDir syncGame explorer'' input
+
+drawBorderCells :: [ScreenPos] -> IO ()
+drawBorderCells [] = return ()
+drawBorderCells (ScreenPos r c : cells) = do setCursorPosition r c
+                                             putStr [(chr 9553)]
+                                             drawBorderCells cells
+
+drawBorders = do
+  setSGR [ SetConsoleIntensity BoldIntensity
+           , SetColor Foreground Dull White ]
+  setCursorPosition 0 1
+  putStr $ (replicate screenWidth (chr 9552))
+  setCursorPosition (screenHeight+1) 1
+  putStr $ (replicate screenWidth (chr 9552))
+  let bordersLeft :: [ScreenPos] = map (\y -> ScreenPos (fromInteger y) 0) [1..(fromIntegral $ screenHeight)]
+  let bordersRight :: [ScreenPos] = map (\y -> ScreenPos (fromInteger y) (fromIntegral $ screenWidth+1)) [1..(fromIntegral $ screenHeight)]
+  drawBorderCells bordersLeft
+  drawBorderCells bordersRight
+  setCursorPosition 0 0
+  putStr [(chr 9556)]
+  setCursorPosition 0 (screenWidth+1)
+  putStr [(chr 9559)]
+  setCursorPosition (screenHeight+1) 0
+  putStr [(chr 9562)]
+  setCursorPosition (screenHeight+1) (screenWidth+1)
+  putStr [(chr 9565)]
 
 drawBiome :: Biome -> IO ()
 drawBiome Ocean =       do  setSGR [ SetConsoleIntensity BoldIntensity
@@ -112,7 +139,7 @@ drawCell CellVillage = do setSGR [ SetConsoleIntensity BoldIntensity
 
 drawCells :: Game -> UI -> [(Int,Int)] -> IO UI
 drawCells game explorer [] = return explorer
-drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
+drawCells game explorer ((x,y):cells) =    do setCursorPosition (y+1) (x+1)
                                               let Pos heroX heroY = explorerPos explorer
                                               let screen = explorerScreen explorer
                                               let w = gameWorld game

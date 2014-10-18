@@ -20,6 +20,7 @@ main = do syncScreen <- newMVar ()
           syncGame :: (TVar Game)  <- atomically $ newTVar $ g
           let e = initialExplorer syncScreen
           initScreen
+          drawBorders
           startSimulation syncGame syncScreen
           gameLoop syncGame e
           finalG <- atomRead syncGame

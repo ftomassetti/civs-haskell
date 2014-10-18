@@ -33,6 +33,7 @@ initialScreen = Screen cells [] []
                       cells = S.replicate screenHeight row
 
 data ScreenPos = ScreenPos { spRow :: Int, spCol :: Int}
+     deriving (Eq, Show)
 
 setScreenCell screen screenPos cell = screen'
                                       where ScreenPos r c = screenPos
