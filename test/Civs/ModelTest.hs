@@ -52,3 +52,13 @@ test_numberOfSettlementsNonEmpty = do
     let (g',_) = insertSettlement g (Settlement 123 (Name "aName") (Pos 123 123))
     assertEqual 1 (numberOfSettlements g')
 
+test_insertSettlementMultipleCalls = do
+    g <- game0
+    let (g',_) = insertSettlement g (Settlement 123 (Name "aName") (Pos 123 123))
+    let (g'',_) = insertSettlement g' (Settlement 123 (Name "aName") (Pos 123 123))
+    let (g''',_) = insertSettlement g'' (Settlement 123 (Name "aName") (Pos 123 123))
+    assertEqual 0 (numberOfSettlements g)
+    assertEqual 1 (numberOfSettlements g')
+    assertEqual 2 (numberOfSettlements g'')
+    assertEqual 3 (numberOfSettlements g''')
+
