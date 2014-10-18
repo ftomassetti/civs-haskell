@@ -63,9 +63,17 @@ drawBorderCells (ScreenPos r c : cells) = do setCursorPosition r c
                                              putStr [(chr 9553)]
                                              drawBorderCells cells
 
+infoAreaLeft   =  82
+infoAreaRight  = 115
+infoAreaTop    =   1
+infoAreaBottom =  80
+
+-- See http://www.kreativekorp.com/software/fonts/samples/petme-0ascii.png
 drawBorders = do
   setSGR [ SetConsoleIntensity BoldIntensity
            , SetColor Foreground Dull White ]
+
+  -- Around map
   setCursorPosition 0 1
   putStr $ (replicate screenWidth (chr 9552))
   setCursorPosition (screenHeight+1) 1
@@ -77,11 +85,39 @@ drawBorders = do
   setCursorPosition 0 0
   putStr [(chr 9556)]
   setCursorPosition 0 (screenWidth+1)
-  putStr [(chr 9559)]
+  putStr [(chr 9574)]
   setCursorPosition (screenHeight+1) 0
   putStr [(chr 9562)]
   setCursorPosition (screenHeight+1) (screenWidth+1)
+  putStr [(chr 9577)]
+
+  -- Around info
+  setCursorPosition 1 (screenWidth+3)
+  putStr "News"
+  setCursorPosition 0 (screenWidth+2)
+  putStr $ (replicate (infoAreaRight-infoAreaLeft) (chr 9552))
+  setCursorPosition (screenHeight+1) (screenWidth+2)
+  putStr $ (replicate (infoAreaRight-infoAreaLeft) (chr 9552))
+
+  setCursorPosition (screenHeight+1) 1
+  putStr $ (replicate screenWidth (chr 9552))
+  let bordersInfoRight :: [ScreenPos] = map (\y -> ScreenPos (fromInteger y) infoAreaRight) [1..(fromIntegral $ screenHeight)]
+  drawBorderCells bordersInfoRight
+  setCursorPosition 0 infoAreaRight
+  putStr [(chr 9559)]
+  setCursorPosition (screenHeight+1) infoAreaRight
   putStr [(chr 9565)]
+
+  -- line below "news"
+  setCursorPosition 2 (screenWidth+2)
+  putStr $ (replicate (infoAreaRight-infoAreaLeft) (chr 9552))
+  -- connections with line below nes
+  setCursorPosition 2 (screenWidth+1)
+  putStr [(chr 9568)]
+  setCursorPosition 2 (infoAreaRight)
+  putStr [(chr 9571)]
+
+  -- Around news
 
 drawBiome :: Biome -> IO ()
 drawBiome Ocean =       do  setSGR [ SetConsoleIntensity BoldIntensity
