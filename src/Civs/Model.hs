@@ -172,7 +172,7 @@ randomPos world seed = Pos x y
                              x = (ss0 !! 0) `mod` (getWidth world)
                              y = (ss0 !! 1) `mod` (getHeight world)
 
-randomLandPos world seed = if isLand world pos then pos else randomPos world (nextSeed seed)
+randomLandPos world seed = if isLand world pos then pos else randomLandPos world (nextSeed seed)
                            where pos = randomPos world seed
 
 
