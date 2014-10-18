@@ -15,6 +15,13 @@ genLang seed = do allSamples <- loadAllSamples
                   let sample = extractRandomSample allSamples seed
                   return $ generateLanguage sample seed
 
+test_nextId = do
+    g <- game0
+    let (id1,g') = nextId g
+    assertEqual 1 id1
+    let (id2,g'') = nextId g'
+    assertEqual 2 id2
+
 test_numberOfGroupsEmpty = do
     g <- game0
     assertEqual 0 (numberOfGroups g)

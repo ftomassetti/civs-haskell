@@ -211,8 +211,9 @@ data Game = Game {
 instance Show Game where
    show g = "Game {groups="++(show $ gameGroups g) ++"}"
 
-nextId :: Game -> (Int, Game)
-nextId game = (gameNextId game, game { gameNextId = 1 + gameNextId game})
+nextId :: Game -> (Id, Game)
+nextId game = (id, game { gameNextId = id + 1})
+              where id = gameNextId game
 
 getGroup :: Game -> Id -> Group
 getGroup game id = fromJust $ M.lookup id (gameGroups game)
