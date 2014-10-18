@@ -135,7 +135,7 @@ drawCells game explorer ((x,y):cells) =    do setCursorPosition y x
                                               let currCellOnScreen = getScreenCell screen (ScreenPos y x)
                                               explorer' <- if currCellOnScreen /= toDraw
                                                            then do drawCell toDraw
-                                                                   let screen' = setScreenCell screen (ScreenPos y x) (CellBiome biome)
+                                                                   let screen' = setScreenCell screen (ScreenPos y x) toDraw
                                                                    return explorer { explorerScreen = screen' }
                                                            else return explorer
                                               drawCells game explorer' cells
