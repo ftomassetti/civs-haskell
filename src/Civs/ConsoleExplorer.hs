@@ -43,7 +43,7 @@ releaseScreen sUI = do ui <- atomRead sUI
                        putMVar syncScreen ()
 
 drawStatus (Pos heroX heroY) game explorer = do
-  setCursorPosition (screenHeight+2) 2
+  setCursorPosition 3 (screenWidth+2)
   setSGR [ SetConsoleIntensity BoldIntensity
        , SetColor Foreground Vivid Blue ]
   let w = gameWorld game
@@ -59,7 +59,7 @@ padding list len value = list ++ pad
 
 drawNews msg row = do setSGR [ SetConsoleIntensity BoldIntensity
                                  , SetColor Foreground Vivid Black ]
-                      helper (padding msg maxlen ' ') (screenHeight+3+row)
+                      helper (padding msg maxlen ' ') (screenHeight+2+row)
                    where     maxlen = oneLineLen * 1
                              oneLineLen = 90
                              helper [] row = return ()
@@ -68,7 +68,7 @@ drawNews msg row = do setSGR [ SetConsoleIntensity BoldIntensity
                                                  helper (drop oneLineLen str) (row+1)
 
 updateNews :: News -> IO()
-updateNews news = helper 0 (take 5 news)
+updateNews news = helper 0 (take 8 news)
                   where helper row [] = return ()
                         helper row (msg:news') = do drawNews msg row
                                                     helper (row+1) news'
@@ -140,7 +140,7 @@ drawBorders = do
 
   -- Around info
   setCursorPosition 1 (screenWidth+3)
-  putStr "News"
+  putStr "Info"
   setCursorPosition 0 (screenWidth+2)
   putStr $ (replicate (infoAreaRight-infoAreaLeft) (chr 9552))
   setCursorPosition (screenHeight+1) (screenWidth+2)
