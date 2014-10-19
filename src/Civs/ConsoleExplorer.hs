@@ -68,6 +68,9 @@ infoAreaRight  = 115
 infoAreaTop    =   1
 infoAreaBottom =  80
 
+newsAreaBottom = screenHeight+10
+newsAreaRight  = infoAreaRight
+
 -- See http://www.kreativekorp.com/software/fonts/samples/petme-0ascii.png
 drawBorders = do
   setSGR [ SetConsoleIntensity BoldIntensity
@@ -117,7 +120,34 @@ drawBorders = do
   setCursorPosition 2 (infoAreaRight)
   putStr [(chr 9570)]
 
+  --
   -- Around news
+  --
+
+  -- news: bottom line
+  setCursorPosition newsAreaBottom 1
+  putStr $ (replicate (newsAreaRight-1) (chr 9552))
+
+  -- news: left and right lines
+  let bordersNewsLeft :: [ScreenPos]  = map (\y -> ScreenPos (fromInteger y) 0) [(fromIntegral $ screenHeight)..(fromIntegral $ newsAreaBottom)]
+  let bordersNewsRight :: [ScreenPos] = map (\y -> ScreenPos (fromInteger y) (fromIntegral $ newsAreaRight))  [(fromIntegral $ screenHeight)..(fromIntegral $ newsAreaBottom)]
+  drawBorderCells bordersNewsLeft
+  drawBorderCells bordersNewsRight
+
+  -- news: bottom corners
+  setCursorPosition (newsAreaBottom) 0
+  putStr [(chr 9562)]
+  setCursorPosition (newsAreaBottom) (newsAreaRight)
+  putStr [(chr 9565)]
+
+  -- news: top corners
+  setCursorPosition (screenHeight+1) 0
+  putStr [(chr 9568)]
+  setCursorPosition (screenHeight+1) (newsAreaRight)
+  putStr [(chr 9571)]
+
+  --newsAreaBottom = screenHeight+10
+  --newsAreaRight
 
 drawBiome :: Biome -> IO ()
 drawBiome Ocean =       do  setSGR [ SetConsoleIntensity BoldIntensity
