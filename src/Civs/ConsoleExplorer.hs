@@ -110,12 +110,12 @@ drawBorders = do
 
   -- line below "news"
   setCursorPosition 2 (screenWidth+2)
-  putStr $ (replicate (infoAreaRight-infoAreaLeft) (chr 9552))
+  putStr $ (replicate (infoAreaRight-infoAreaLeft) (chr 9472))
   -- connections with line below nes
   setCursorPosition 2 (screenWidth+1)
-  putStr [(chr 9568)]
+  putStr [(chr 9567)]
   setCursorPosition 2 (infoAreaRight)
-  putStr [(chr 9571)]
+  putStr [(chr 9570)]
 
   -- Around news
 
