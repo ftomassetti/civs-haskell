@@ -283,7 +283,13 @@ getInput = do
   char <- getChar
   getInputChar char
 
-newCoord input heroX heroY world = case input of
+newCoord :: Input -> World -> UI -> UI
+newCoord input w ui = ui { explorerPos = newPos }
+                      where Pos heroX heroY = explorerPos ui
+                            newPos = newCoord' input heroX heroY w
+
+newCoord' :: Input -> Int -> Int -> World -> Position
+newCoord' input heroX heroY world = case input of
     Up    -> Pos heroX (max (heroY - 1) 0)
     Down  -> Pos heroX (min (heroY + 1) ((getHeight world) - 1))
     Civs.ConsoleExplorer.Left  -> Pos (max (heroX - 1) 0) heroY
@@ -297,7 +303,7 @@ handleDir syncGame sUI input = do
     let w = gameWorld game
     ui <- atomRead sUI
     let Pos heroX heroY = explorerPos ui
-    let nc = newCoord input heroX heroY w
+    atomUpdate sUI (newCoord input w)
     gameLoop syncGame sUI
 
 dynScreenWidth  = do res <- TS.size
