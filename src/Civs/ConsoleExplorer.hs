@@ -23,7 +23,11 @@ data Input = Up
            | NoInput
            deriving (Eq)
 
-data UI = UI { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
+data UI = UI {
+    explorerPos :: Position,
+    explorerScreen :: Screen,
+    explorerSyncScreen :: MVar ()
+}
 
 lockScreen :: (TVar UI) -> IO ()
 lockScreen sUI = do ui <- atomRead sUI
