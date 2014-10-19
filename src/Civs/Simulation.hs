@@ -31,7 +31,7 @@ groupBalancer syncGame syncScreen = do
                                                 then do (game', gr) <- atomUpdateT syncGame (generateGroup (head ri))
                                                         let Name sName = groupName gr
                                                         drawNews $ "Balancer: creating group "++ sName
-                                                else drawNews $ "Balancer: enough groups ("++(show $ length groupIds)++")"
+                                                else return () -- drawNews $ "Balancer: enough groups ("++(show $ length groupIds)++")"
                                             putMVar syncScreen ()
                                             threadDelay 4500000
                                             loop syncGame syncScreen (tail ri)
@@ -89,7 +89,7 @@ simLoop syncGame syncScreen randomInts = do
     takeMVar syncScreen
     (event,randomInts') <- simEvent randomInts syncGame
     executeEvent syncGame event
-    drawNews $ " "++ (show event)
+    if event==NoEvent then return() else drawNews $ (show event)
     putMVar syncScreen ()
     threadDelay 1000000
     simLoop syncGame syncScreen randomInts'

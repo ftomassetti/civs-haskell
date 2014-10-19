@@ -37,10 +37,15 @@ drawStatus (Pos heroX heroY) game explorer = do
                     Just s -> "in " ++ (show $ settlName s)
   putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++ posMsg ++ "       "
 
-drawNews msg = do setCursorPosition (screenHeight+3) 2
-                  setSGR [ SetConsoleIntensity BoldIntensity
+drawNews msg = do setSGR [ SetConsoleIntensity BoldIntensity
                          , SetColor Foreground Vivid Black ]
-                  putStr $ "News: " ++ msg ++ "                                        "
+                  helper msg 3
+               where helper [] row = return ()
+                     helper str row = do setCursorPosition row (infoAreaLeft + 1)
+                                         putStr $ (take len str)
+                                         helper (drop len str) (row+1)
+                                      where len = (infoAreaRight-infoAreaLeft-2)
+
 
 gameLoop :: (TVar Game) -> UI -> IO()
 gameLoop syncGame explorer = do
