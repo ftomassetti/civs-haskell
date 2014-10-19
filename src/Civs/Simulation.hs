@@ -88,11 +88,11 @@ executeEvent syncGame (NewSettlement groupId settl) = return ()
 
 simLoop :: (TVar Game) -> (TVar UI) -> RandomIntSeq -> IO ()
 simLoop syncGame sUI randomInts = do
-    lockScreen sUI
+    --lockScreen sUI
     (event,randomInts') <- simEvent randomInts syncGame
     executeEvent syncGame event
     if event==NoEvent then return() else recordNews (show event) sUI
-    releaseScreen sUI
+    --releaseScreen sUI
     threadDelay 1000000
     simLoop syncGame sUI randomInts'
 

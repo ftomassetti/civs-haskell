@@ -59,9 +59,9 @@ padding list len value = list ++ pad
 
 drawNews msg row = do setSGR [ SetConsoleIntensity BoldIntensity
                                  , SetColor Foreground Vivid Black ]
-                      helper (padding msg maxlen ' ') (screenHeight+2+row)
-                   where     maxlen = oneLineLen * 3
-                             oneLineLen = (infoAreaRight-infoAreaLeft-2)
+                      helper (padding msg maxlen ' ') (screenHeight+3+row)
+                   where     maxlen = oneLineLen * 1
+                             oneLineLen = 90
                              helper [] row = return ()
                              helper str row = do setCursorPosition row 2
                                                  putStr $ (take oneLineLen str)
@@ -79,6 +79,7 @@ recordNews msg sUI = do
     let news = uiNews ui
     lockScreen sUI
     updateNews news
+    --drawNews msg 0
     releaseScreen sUI
     return ()
 
@@ -87,9 +88,9 @@ appendNews msg ui = ui { uiNews = msg:news }
 
 gameLoop :: (TVar Game) -> (TVar UI) -> IO()
 gameLoop syncGame sUI = do
+  lockScreen sUI
   ui <- atomRead sUI
   let hero = explorerPos ui
-  lockScreen sUI
   game <- atomRead syncGame
   drawWorld game sUI
   drawHero  hero sUI
