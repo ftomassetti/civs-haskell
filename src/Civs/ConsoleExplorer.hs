@@ -23,10 +23,13 @@ data Input = Up
            | NoInput
            deriving (Eq)
 
+type News = [String]
+
 data UI = UI {
     explorerPos :: Position,
     explorerScreen :: Screen,
-    explorerSyncScreen :: MVar ()
+    explorerSyncScreen :: MVar (),
+    uiNews :: News
 }
 
 lockScreen :: (TVar UI) -> IO ()
@@ -54,16 +57,33 @@ drawStatus (Pos heroX heroY) game explorer = do
 padding list len value = list ++ pad
                          where pad = replicate (len - (length list)) value
 
-drawNews msg = do setSGR [ SetConsoleIntensity BoldIntensity
-                         , SetColor Foreground Vivid Black ]
-                  helper (padding msg maxlen ' ') 3
-               where maxlen = oneLineLen * 3
-                     oneLineLen = (infoAreaRight-infoAreaLeft-2)
-                     helper [] row = return ()
-                     helper str row = do setCursorPosition row (infoAreaLeft + 1)
-                                         putStr $ (take oneLineLen str)
-                                         helper (drop oneLineLen str) (row+1)
+drawNews msg row = do setSGR [ SetConsoleIntensity BoldIntensity
+                                 , SetColor Foreground Vivid Black ]
+                      helper (padding msg maxlen ' ') (screenHeight+2+row)
+                   where     maxlen = oneLineLen * 3
+                             oneLineLen = (infoAreaRight-infoAreaLeft-2)
+                             helper [] row = return ()
+                             helper str row = do setCursorPosition row 2
+                                                 putStr $ (take oneLineLen str)
+                                                 helper (drop oneLineLen str) (row+1)
 
+updateNews :: News -> IO()
+updateNews news = helper 0 (take 5 news)
+                  where helper row [] = return ()
+                        helper row (msg:news') = do drawNews msg row
+                                                    helper (row+1) news'
+
+recordNews :: String -> TVar UI -> IO()
+recordNews msg sUI = do
+    ui <- atomUpdate sUI (appendNews msg)
+    let news = uiNews ui
+    lockScreen sUI
+    updateNews news
+    releaseScreen sUI
+    return ()
+
+appendNews msg ui = ui { uiNews = msg:news }
+                    where news = uiNews ui
 
 gameLoop :: (TVar Game) -> (TVar UI) -> IO()
 gameLoop syncGame sUI = do
@@ -322,4 +342,4 @@ initialUI :: IO UI
 initialUI = do
   syncScreen <- newMVar ()
   let pos = Pos 100 100
-  return $ UI pos initialScreen syncScreen
+  return $ UI pos initialScreen syncScreen []

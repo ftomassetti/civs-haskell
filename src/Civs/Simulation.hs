@@ -26,15 +26,15 @@ groupBalancer syncGame sUI = do
         rg <- newStdGen
         let ss = randoms rg :: [Int]
         loop syncGame sUI ss
-    where loop syncGame sUI ri = do         lockScreen sUI
+    where loop syncGame sUI ri = do         --lockScreen sUI
                                             game <- atomRead syncGame
                                             let groupIds = M.keys $ gameGroups game
                                             if (length groupIds) < 5
                                                 then do (game', gr) <- atomUpdateT syncGame (generateGroup (head ri))
                                                         let Name sName = groupName gr
-                                                        drawNews $ "Balancer: creating group "++ sName
+                                                        recordNews ("Balancer: creating group "++ sName) sUI
                                                 else return () -- drawNews $ "Balancer: enough groups ("++(show $ length groupIds)++")"
-                                            releaseScreen sUI
+                                            --releaseScreen sUI
                                             threadDelay 4500000
                                             loop syncGame sUI (tail ri)
 
@@ -91,7 +91,7 @@ simLoop syncGame sUI randomInts = do
     lockScreen sUI
     (event,randomInts') <- simEvent randomInts syncGame
     executeEvent syncGame event
-    if event==NoEvent then return() else drawNews $ (show event)
+    if event==NoEvent then return() else recordNews (show event) sUI
     releaseScreen sUI
     threadDelay 1000000
     simLoop syncGame sUI randomInts'
