@@ -14,17 +14,19 @@ import Control.Concurrent.STM
 import qualified Data.Map.Strict as M
 
 -- |Start all the separate threads for the simulation
-startSimulation syncGame syncScreen = do
-    forkIO $ simulation syncGame syncScreen
-    forkIO $ groupBalancer syncGame syncScreen
+startSimulation :: (TVar Game) -> (TVar UI) -> IO ()
+startSimulation syncGame sUI = do
+    forkIO $ simulation syncGame sUI
+    forkIO $ groupBalancer syncGame sUI
+    return ()
 
 -- |This thread creates new group when there are too few
-groupBalancer :: (TVar Game) -> (MVar ()) -> IO ()
-groupBalancer syncGame syncScreen = do
+groupBalancer :: (TVar Game) -> (TVar UI) -> IO ()
+groupBalancer syncGame sUI = do
         rg <- newStdGen
         let ss = randoms rg :: [Int]
-        loop syncGame syncScreen ss
-    where loop syncGame syncScreen ri = do  takeMVar syncScreen
+        loop syncGame sUI ss
+    where loop syncGame sUI ri = do         lockScreen sUI
                                             game <- atomRead syncGame
                                             let groupIds = M.keys $ gameGroups game
                                             if (length groupIds) < 5
@@ -32,15 +34,15 @@ groupBalancer syncGame syncScreen = do
                                                         let Name sName = groupName gr
                                                         drawNews $ "Balancer: creating group "++ sName
                                                 else return () -- drawNews $ "Balancer: enough groups ("++(show $ length groupIds)++")"
-                                            putMVar syncScreen ()
+                                            releaseScreen sUI
                                             threadDelay 4500000
-                                            loop syncGame syncScreen (tail ri)
+                                            loop syncGame sUI (tail ri)
 
-simulation :: (TVar Game) -> (MVar ()) -> IO ()
-simulation syncGame syncScreen = do
+simulation :: (TVar Game) -> (TVar UI) -> IO ()
+simulation syncGame sUI = do
     rg <- newStdGen
     let ss = randoms rg :: [Int]
-    simLoop syncGame syncScreen ss
+    simLoop syncGame sUI ss
 
 type RandomIntSeq = [Int]
 
@@ -84,13 +86,13 @@ executeEvent syncGame NewGroup = return ()
 
 executeEvent syncGame (NewSettlement groupId settl) = return ()
 
-simLoop :: (TVar Game) -> (MVar ()) -> RandomIntSeq -> IO ()
-simLoop syncGame syncScreen randomInts = do
-    takeMVar syncScreen
+simLoop :: (TVar Game) -> (TVar UI) -> RandomIntSeq -> IO ()
+simLoop syncGame sUI randomInts = do
+    lockScreen sUI
     (event,randomInts') <- simEvent randomInts syncGame
     executeEvent syncGame event
     if event==NoEvent then return() else drawNews $ (show event)
-    putMVar syncScreen ()
+    releaseScreen sUI
     threadDelay 1000000
-    simLoop syncGame syncScreen randomInts'
+    simLoop syncGame sUI randomInts'
 

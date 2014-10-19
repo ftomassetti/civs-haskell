@@ -25,6 +25,16 @@ data Input = Up
 
 data UI = UI { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
 
+lockScreen :: (TVar UI) -> IO ()
+lockScreen sUI = do ui <- atomRead sUI
+                    let syncScreen = explorerSyncScreen ui
+                    takeMVar syncScreen
+
+releaseScreen :: (TVar UI) -> IO ()
+releaseScreen sUI = do ui <- atomRead sUI
+                       let syncScreen = explorerSyncScreen ui
+                       putMVar syncScreen ()
+
 drawStatus (Pos heroX heroY) game explorer = do
   setCursorPosition (screenHeight+2) 2
   setSGR [ SetConsoleIntensity BoldIntensity
@@ -51,20 +61,20 @@ drawNews msg = do setSGR [ SetConsoleIntensity BoldIntensity
                                          helper (drop oneLineLen str) (row+1)
 
 
-gameLoop :: (TVar Game) -> UI -> IO()
-gameLoop syncGame explorer = do
-  let syncScreen = explorerSyncScreen explorer
-  let hero = explorerPos explorer
-  takeMVar syncScreen
+gameLoop :: (TVar Game) -> (TVar UI) -> IO()
+gameLoop syncGame sUI = do
+  ui <- atomRead sUI
+  let hero = explorerPos ui
+  lockScreen sUI
   game <- atomRead syncGame
-  explorer'  <- drawWorld game explorer
-  explorer'' <- drawHero  hero explorer'
-  drawStatus hero game explorer''
-  putMVar syncScreen ()
+  drawWorld game sUI
+  drawHero  hero sUI
+  drawStatus hero game sUI
+  releaseScreen sUI
   input :: Input <- getInput
   case input of
     Exit -> handleExit
-    _    -> handleDir syncGame explorer'' input
+    _    -> handleDir syncGame sUI input
 
 drawBorderCells :: [ScreenPos] -> IO ()
 drawBorderCells [] = return ()
@@ -212,9 +222,10 @@ drawCell CellVillage = do setSGR [ SetConsoleIntensity BoldIntensity
                               , SetColor Foreground Vivid Red ]
                           putStr "#"
 
-drawCells :: Game -> UI -> [(Int,Int)] -> IO UI
-drawCells game explorer [] = return explorer
-drawCells game explorer ((x,y):cells) =    do setCursorPosition (y+1) (x+1)
+drawCells :: Game -> (TVar UI) -> [(Int,Int)] -> IO ()
+drawCells game sUI [] = return ()
+drawCells game sUI ((x,y):cells) =         do setCursorPosition (y+1) (x+1)
+                                              explorer <- atomRead sUI
                                               let Pos heroX heroY = explorerPos explorer
                                               let screen = explorerScreen explorer
                                               let w = gameWorld game
@@ -229,19 +240,20 @@ drawCells game explorer ((x,y):cells) =    do setCursorPosition (y+1) (x+1)
                                                                    let screen' = setScreenCell screen (ScreenPos y x) toDraw
                                                                    return explorer { explorerScreen = screen' }
                                                            else return explorer
-                                              drawCells game explorer' cells
+                                              drawCells game sUI cells
 
-drawWorld :: Game -> UI -> IO UI
-drawWorld game explorer = do
+drawWorld :: Game -> (TVar UI) -> IO ()
+drawWorld game sUI = do
   let cells = [(x,y) | x <- [0..(screenWidth-1)], y <- [0..(screenHeight-1)]]
-  drawCells game explorer cells
+  drawCells game sUI cells
 
 heroPosOnScreen (Pos heroX heroY) explorer =
   let hw = screenWidth `div` 2
       hh = screenHeight `div` 2
   in Pos hw hh
 
-drawHero pos@(Pos heroX heroY) explorer = do
+drawHero pos@(Pos heroX heroY) sUI = do
+  explorer <- atomRead sUI
   let (Pos heroOnScreenX heroOnScreenY) = heroPosOnScreen pos explorer
   setCursorPosition heroOnScreenY heroOnScreenX
   setSGR [ SetConsoleIntensity BoldIntensity
@@ -279,13 +291,14 @@ newCoord input heroX heroY world = case input of
 
 -- given a world and a direction, 'adjust' the hero's position, and loop
 -- with our updated hero
-handleDir :: (TVar Game) -> UI -> Input -> IO()
-handleDir syncGame explorer input = do
+handleDir :: (TVar Game) -> (TVar UI) -> Input -> IO()
+handleDir syncGame sUI input = do
     game <- atomRead syncGame
     let w = gameWorld game
-    let Pos heroX heroY = explorerPos explorer
+    ui <- atomRead sUI
+    let Pos heroX heroY = explorerPos ui
     let nc = newCoord input heroX heroY w
-    gameLoop syncGame (explorer { explorerPos = nc })
+    gameLoop syncGame sUI
 
 dynScreenWidth  = do res <- TS.size
                      case res of
@@ -305,6 +318,8 @@ initScreen = do
     setTitle "Civs"
     clearScreen
 
-initialExplorer :: MVar () -> UI
-initialExplorer syncScreen = UI pos initialScreen syncScreen
-                             where pos = Pos 100 100
+initialUI :: IO UI
+initialUI = do
+  syncScreen <- newMVar ()
+  let pos = Pos 100 100
+  return $ UI pos initialScreen syncScreen

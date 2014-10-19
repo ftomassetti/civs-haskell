@@ -14,14 +14,14 @@ worldFileName = "worlds/seed_77.world"
 worldBytes = S.readFile worldFileName
 
 main :: IO ()
-main = do syncScreen <- newMVar ()
-          namesSamples <- loadAllSamples
+main = do namesSamples <- loadAllSamples
           g <- initialGame worldFileName namesSamples
           syncGame :: (TVar Game)  <- atomically $ newTVar $ g
-          let e = initialExplorer syncScreen
+          ui :: UI <- initialUI
+          sUI :: (TVar UI) <- atomically $ newTVar $ ui
           initScreen
           drawBorders
-          startSimulation syncGame syncScreen
-          gameLoop syncGame e
+          startSimulation syncGame sUI
+          gameLoop syncGame sUI
           finalG <- atomRead syncGame
           putStrLn $ "Game: " ++ (show finalG)
