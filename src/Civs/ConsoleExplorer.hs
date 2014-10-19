@@ -52,7 +52,7 @@ drawStatus (Pos heroX heroY) game explorer = do
   let posMsg = case getSettlementAt game pos of
                     Nothing -> (show biome)
                     Just s -> "in " ++ (show $ settlName s)
-  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++ posMsg ++ "       "
+  putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++ posMsg
 
 padding list len value = list ++ pad
                          where pad = replicate (len - (length list)) value
