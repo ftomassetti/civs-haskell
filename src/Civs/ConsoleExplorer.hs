@@ -310,16 +310,6 @@ handleDir syncGame sUI input = do
     atomUpdate sUI (newCoord input w)
     gameLoop syncGame sUI
 
-dynScreenWidth  = do res <- TS.size
-                     case res of
-                       Just (TS.Window h w) -> return w
-                       Nothing -> return 80
-
-dynScreenHeight = do res <- TS.size
-                     case res of
-                       Just (TS.Window h w) -> return h
-                       Nothing -> return 30
-
 initScreen = do
     hSetEcho stdin False
     hSetBuffering stdin  NoBuffering
