@@ -26,7 +26,7 @@ data Input = Up
 data UI = UI { explorerPos :: Position, explorerScreen :: Screen, explorerSyncScreen :: MVar () }
 
 drawStatus (Pos heroX heroY) game explorer = do
-  setCursorPosition (screenHeight+2) 0
+  setCursorPosition (screenHeight+2) 2
   setSGR [ SetConsoleIntensity BoldIntensity
        , SetColor Foreground Vivid Blue ]
   let w = gameWorld game
@@ -37,7 +37,7 @@ drawStatus (Pos heroX heroY) game explorer = do
                     Just s -> "in " ++ (show $ settlName s)
   putStr $ "[" ++ show(heroX) ++ ", " ++ show(heroY) ++ "] "++ posMsg ++ "       "
 
-drawNews msg = do setCursorPosition (screenHeight+3) 0
+drawNews msg = do setCursorPosition (screenHeight+3) 2
                   setSGR [ SetConsoleIntensity BoldIntensity
                          , SetColor Foreground Vivid Black ]
                   putStr $ "News: " ++ msg ++ "                                        "
