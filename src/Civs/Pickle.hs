@@ -275,3 +275,4 @@ toInt (PickleInt i)       = i
 toDouble (PickleFloat f)     = f
 toList (PickleList l)     = l
 toList e = error $ "I canno convert to list "++(printPickle e)
+toTuple2 (PickleTuple2 a b) = (a, b)

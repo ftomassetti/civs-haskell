@@ -8,7 +8,6 @@ import Data.Maybe
 import qualified Data.Map.Strict as M
 import System.Random
 import Namegen
-import Data.Map.Strict as M
 import qualified Data.ByteString.Lazy as S
 
 -------------------------------------------------
@@ -108,6 +107,53 @@ getWorld (World (PickleSetState _ (PickleDict m))) = m
 getWorldEntry w k = let d = getWorld w
                     in getMaybe (M.lookup (PickleString k) d)
 
+getSeaLevel w = let matrix = getWorldEntry w "elevation"
+                    dat = Civs.Pickle.toDict matrix
+                    th = getMaybe $ M.lookup "thresholds" dat :: PickleElement
+                    th' = toList th
+                    seaLevel = th' !! 0
+                in  toDouble . snd . toTuple2 $ seaLevel
+
+getPlainLevel w = let matrix = getWorldEntry w "elevation"
+                      dat = Civs.Pickle.toDict matrix
+                      th = getMaybe $ M.lookup "thresholds" dat :: PickleElement
+                      th' = toList th
+                      seaLevel = th' !! 0
+                  in  toDouble . snd . toTuple2 $ seaLevel
+
+getHillLevel w = let matrix = getWorldEntry w "elevation"
+                     dat = Civs.Pickle.toDict matrix
+                     th = getMaybe $ M.lookup "thresholds" dat :: PickleElement
+                     th' = toList th
+                     seaLevel = th' !! 0
+                 in   toDouble . snd . toTuple2 $ seaLevel
+
+getMountainLevel w = let matrix = getWorldEntry w "elevation"
+                         dat = Civs.Pickle.toDict matrix
+                         th = getMaybe $ M.lookup "thresholds" dat :: PickleElement
+                         th' = toList th
+                         seaLevel = th' !! 0
+                     in  toDouble . snd . toTuple2 $ seaLevel
+
+dist low high val lowValue highValue = let diff  = val - low
+                                           delta = high - low
+                                           p     = diff / delta
+                                       in p*highValue + (1-p)*lowValue
+
+
+toMeters w el = let sl = getSeaLevel w
+                    pl = getPlainLevel w
+                    hl = getHillLevel w
+                    ml = getMountainLevel w
+                in round $ case () of _
+                                        | el < sl -> 0
+                                        | el < pl -> dist sl pl el 0 100
+                                        | el < hl -> dist pl hl el 100 300
+                                        | el < ml -> dist hl ml el 300 500
+                                        | otherwise -> dist ml (ml*20) el 500 10000
+
+getElevationInMeter w pos = toMeters w (getElevation w pos)
+
 getName w = toString $ getWorldEntry w "name"
 
 getWidth :: World -> Int
@@ -204,6 +250,7 @@ data Settlement = Settlement {
     settlPos :: Position,
     settlId :: Int
 } deriving (Eq, Show)
+
 -------------------------------------------------
 -- Game
 -------------------------------------------------
@@ -282,6 +329,6 @@ generateGame world languageSamples = Game 1 world M.empty languageSamples M.empt
 
 initialGame worldFileName languageSamples = do
     byteString <- S.readFile worldFileName :: IO S.ByteString
-    world' <- process (PickleStatus [] empty) byteString
+    world' <- process (PickleStatus [] M.empty) byteString
     let world = World world'
     return $ generateGame world languageSamples

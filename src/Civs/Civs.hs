@@ -11,7 +11,6 @@ import Control.Concurrent
 import Control.Concurrent.STM
 
 worldFileName = "worlds/seed_77.world"
-worldBytes = S.readFile worldFileName
 
 main :: IO ()
 main = do namesSamples <- loadAllSamples
