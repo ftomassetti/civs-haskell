@@ -280,7 +280,7 @@ heroPosOnScreen (Pos heroX heroY) explorer =
 drawHero pos@(Pos heroX heroY) sUI = do
   explorer <- atomRead sUI
   let (Pos heroOnScreenX heroOnScreenY) = heroPosOnScreen pos explorer
-  setCursorPosition heroOnScreenY heroOnScreenX
+  setCursorPosition (heroOnScreenY+1) (heroOnScreenX+1)
   setSGR [ SetConsoleIntensity BoldIntensity
          , SetColor Foreground Vivid Red ]
   putStr "@"
